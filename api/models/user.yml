@@ -1,0 +1,15 @@
+#file: noinspection YAMLSchemaValidation
+User:
+  type: object
+  required: [id, login, fullName]
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Идентификатор
+    login:
+      type: string
+      description: Логин
+    fullName:
+      type: string
+      description: ФИО
