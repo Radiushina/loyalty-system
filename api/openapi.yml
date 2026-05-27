@@ -1,0 +1,116 @@
+openapi: 3.1.0
+
+info:
+  title: Cumulative loyalty system API
+  version: 2.18.0
+  description: |
+    Данный документ содержит документацию взаимодействия с накопительной системой лояльности
+
+tags:
+  - name: Auth
+    description: Методы авторизации
+
+paths:
+  /api/user/register:
+    post:
+      summary: Аутентификация пользователя
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ login, password ]
+              properties:
+                login:
+                  type: string
+                  description: Логин
+                  minLength: 4
+                  maxLength: 128
+                password:
+                  type: string
+                  description: Пароль
+                  minLength: 4
+                  maxLength: 128
+      responses:
+        200:
+          description: 'Успешная аутентификация'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ user, token ]
+                properties:
+                  user:
+                    $ref: './models/user.yml#/User'
+                  token:
+                    type: string
+        400:
+          $ref: '#/components/responses/400'
+        409:
+          $ref: '#/components/responses/409'
+        default:
+          $ref: '#/components/responses/default'
+
+
+components:
+  responses:
+    '400':
+      description: 'Неверный формат запроса'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          examples:
+            bind:
+              summary: Bind Example
+              value: { "msg": "bind" }
+            validate:
+              summary: Validate Example
+              value: { "msg": "validate" }
+
+    '401':
+      description: 'Ошибка авторизации'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "unauthorized" }
+
+    '403':
+      description: 'Ошибка проверки прав доступа'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "access forbidden" }
+    '404':
+      description: 'Объект не найден'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "not found" }
+    '409':
+      description: 'Логин уже занят'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "login is already taken" }
+    default:
+      description: 'Внутренняя ошибка сервиса'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "internal server error" }
+  schemas:
+    UnsuccessfulResponse:
+      type: object
+      required: [ msg ]
+      properties:
+        msg:
+          type: string

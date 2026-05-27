@@ -1,0 +1,9 @@
+rules:
+no-unused-components: warn
+
+extends:
+- recommended
+
+theme:
+openapi:
+schemasExpansionLevel: 3
