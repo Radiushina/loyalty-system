@@ -1,5 +1,5 @@
 api-build:
-	docker run --rm -v ${PWD}/docs:/spec redocly/cli build-docs --config redocly.yml -o api.html openapi.yml
+	docker run --rm -v ${PWD}/api:/spec redocly/cli build-docs --config redocly.yml -o api.html openapi.yml
 
 POSTGRES_ADMIN_URL ?= postgres://developer:my_pass@localhost:5432/postgres?sslmode=disable
 DB_NAME ?= loyalty-system
