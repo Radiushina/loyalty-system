@@ -3,12 +3,14 @@ package di
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
-	"github.com/Radiushina/Cumulative-loyalty-system/internal/config"
-	"github.com/Radiushina/Cumulative-loyalty-system/internal/logger"
+	"github.com/Radiushina/loyalty-system/internal/config"
+	"github.com/Radiushina/loyalty-system/internal/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
@@ -58,24 +60,46 @@ func (a *App) initialize(ctx context.Context) error {
 	}
 	a.logger = zl
 
-	// 3. Инициализируем бд
-	var dbPool *pgxpool.Pool
-	// Когда подключишь PostgreSQL: a.db = dbPool и закрывай пул в gracefulShutdown (NewApp).
-	// Не defer Close здесь — иначе пул закроется сразу после initialize, до Run.
-	_ = dbPool
+	// 3. Инициализируем БД. Не defer Close здесь — пул живёт до gracefulShutdown в NewApp.
+	dbPool, err := pgxpool.New(ctx, postgresDSN(cfg.Storage))
+	if err != nil {
+		return fmt.Errorf("connect postgres: %w", err)
+	}
+	if err := dbPool.Ping(ctx); err != nil {
+		dbPool.Close()
+		return fmt.Errorf("ping postgres: %w", err)
+	}
+	a.db = dbPool
+	zl.Info("postgres connected",
+		zap.String("host", cfg.Storage.Host),
+		zap.String("database", cfg.Storage.Database),
+	)
 
-	// хендлер
+	// 4. HTTP-маршруты
 	mux := http.NewServeMux()
-	handler := logger.LoggingMiddleware(zl, mux)
+	httpHandler := logger.LoggingMiddleware(zl, mux)
 
-	// 4. Стар сервера
+	// 5. Старт HTTP-сервера
 	srv := http.Server{
 		Addr:    cfg.Server.Address,
-		Handler: handler,
+		Handler: httpHandler,
 	}
 
 	a.server = NewServer(&srv)
 	return nil
+}
+
+func postgresDSN(c config.PostgresConfig) string {
+	u := &url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(c.User, c.Password),
+		Host:   net.JoinHostPort(c.Host, c.Port),
+		Path:   "/" + c.Database,
+	}
+	q := u.Query()
+	q.Set("sslmode", "disable")
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 // Run - запуск App

@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Radiushina/Cumulative-loyalty-system/cmd/gophermart/di"
+	"github.com/Radiushina/loyalty-system/cmd/gophermart/di"
 )
 
 func main() {

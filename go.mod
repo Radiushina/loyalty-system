@@ -1,4 +1,4 @@
-module github.com/Radiushina/Cumulative-loyalty-system
+module github.com/Radiushina/loyalty-system
 
 go 1.26.2
 

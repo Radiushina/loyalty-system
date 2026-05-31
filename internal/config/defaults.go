@@ -9,11 +9,11 @@ func DefaultConfig() Config {
 			Address: ":8080",
 		},
 		Storage: PostgresConfig{
-			Host:     "postgres",
+			Host:     "localhost",
 			Port:     "5432",
-			Database: "loyaltySystem",
-			User:     "postgres",
-			Password: "",
+			Database: "loyalty-system",
+			User:     "developer",
+			Password: "my_pass",
 		},
 	}
 }

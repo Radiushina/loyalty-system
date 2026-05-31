@@ -55,6 +55,7 @@ func (l *Loader) Load() (*Config, error) {
 	}
 
 	// 4. Определение и анализ CLI флагов.
+	l.defineFlags()
 	if err := l.flags.Parse(os.Args[1:]); err != nil {
 		return nil, fmt.Errorf("failed to parse flags: %w", err)
 	}
@@ -93,13 +94,17 @@ func (l *Loader) loadYAML() error {
 }
 
 func (l *Loader) loadEnv() error {
-	// Callback that strips prefix and converts env var name to lowercase with dots
+	const envPrefix = "LOYALTY_SYS_"
+
 	cb := func(s string) string {
-		return strings.ReplaceAll(strings.ToLower(s), "_", ".")
+		key := strings.TrimPrefix(s, envPrefix)
+		if key == s {
+			return ""
+		}
+		return strings.ReplaceAll(strings.ToLower(key), "_", ".")
 	}
 
-	// Load with PLATFORM_ prefix to avoid conflicts with system env vars (like CI_SERVER, SERVER, etc.)
-	if err := l.k.Load(env.Provider("LOYALTY_SYS_", ".", cb), nil); err != nil {
+	if err := l.k.Load(env.Provider(envPrefix, ".", cb), nil); err != nil {
 		return fmt.Errorf("loadEnv: %w", err)
 	}
 	return nil
@@ -126,12 +131,12 @@ func (l *Loader) loadFlags() {
 	// Map CLI flags to config structure
 	//nolint:dupl // there are different mappings.
 	flagMapping := map[string]string{
-		"http-address":      "server.http.address",
-		"postgres-host":     "storage.postgres.host",
-		"postgres-port":     "storage.postgres.port",
-		"postgres-database": "storage.postgres.database",
-		"postgres-user":     "storage.postgres.user",
-		"postgres-password": "storage.postgres.password",
+		"http-address":      "server.address",
+		"postgres-host":     "storage.host",
+		"postgres-port":     "storage.port",
+		"postgres-database": "storage.database",
+		"postgres-user":     "storage.user",
+		"postgres-password": "storage.password",
 	}
 
 	// Set values from flags if they were explicitly provided
