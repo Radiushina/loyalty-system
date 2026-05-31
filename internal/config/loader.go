@@ -94,7 +94,7 @@ func (l *Loader) loadYAML() error {
 }
 
 func (l *Loader) loadEnv() error {
-	const envPrefix = "LOYALTY_SYS_"
+	const envPrefix = "LOYALTY_SYSTEM_"
 
 	cb := func(s string) string {
 		key := strings.TrimPrefix(s, envPrefix)
