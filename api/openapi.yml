@@ -27,13 +27,9 @@ paths:
                 login:
                   type: string
                   description: Логин
-                  minLength: 4
-                  maxLength: 128
                 password:
                   type: string
                   description: Пароль
-                  minLength: 4
-                  maxLength: 128
       responses:
         200:
           description: 'Успешная регистрация'
@@ -54,7 +50,7 @@ paths:
         default:
           $ref: '#/components/responses/default'
 
-  /api/user/auth:
+  /api/user/login:
     post:
       summary: Аутентификация пользователя
       tags:
@@ -70,13 +66,9 @@ paths:
                 login:
                   type: string
                   description: Логин
-                  minLength: 4
-                  maxLength: 128
                 password:
                   type: string
                   description: Пароль
-                  minLength: 4
-                  maxLength: 128
       responses:
         200:
           description: 'Успешная аутентификация'
@@ -98,6 +90,15 @@ paths:
           $ref: '#/components/responses/default'
 
 components:
+  securitySchemes:
+    APIKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+    SourceAPIKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
   responses:
     '400':
       description: 'Неверный формат запроса'

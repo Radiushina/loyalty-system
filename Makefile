@@ -4,7 +4,7 @@ api-build:
 POSTGRES_ADMIN_URL ?= postgres://developer:my_pass@localhost:5432/postgres?sslmode=disable
 DB_NAME ?= loyalty-system
 DATABASE_URL ?= postgres://developer:my_pass@localhost:5432/$(DB_NAME)?sslmode=disable
-MIGRATIONS_PATH := internal/migrations/postgres
+MIGRATIONS_PATH := migrations/postgres
 
 .PHONY: docker-up docker-down
 docker-up:
@@ -13,11 +13,17 @@ docker-up:
 docker-down:
 	docker compose down
 
-# Создать БД, если её ещё нет (миграции и приложение БД сами не создают).
 db-create:
 	@psql "$(POSTGRES_ADMIN_URL)" -tc "SELECT 1 FROM pg_database WHERE datname = '$(DB_NAME)'" | grep -q 1 \
 		&& echo "database $(DB_NAME) already exists" \
 		|| psql "$(POSTGRES_ADMIN_URL)" -c 'CREATE DATABASE "$(DB_NAME)";'
+
+migrate-postgres:
+ifneq "$(name)" ""
+	migrate create -ext sql -dir migrations/postgres $(name)
+else
+	echo "\nSpecify migration script name\n";
+endif
 
 .PHONY: db-create migrate-up migrate-down
 migrate-up:

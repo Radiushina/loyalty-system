@@ -11,6 +11,8 @@ import (
 
 	"github.com/Radiushina/loyalty-system/internal/config"
 	"github.com/Radiushina/loyalty-system/internal/logger"
+	"github.com/Radiushina/loyalty-system/internal/user"
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
@@ -75,8 +77,12 @@ func (a *App) initialize(ctx context.Context) error {
 		zap.String("database", cfg.Storage.Database),
 	)
 
-	// 4. HTTP-маршруты
-	mux := http.NewServeMux()
+	// 4. Инициализируем repo, service, handler
+	userRepo := user.NewRepository(dbPool)
+	userSvc := user.NewService(userRepo)
+	userHandler := user.NewHandler(userSvc, zl)
+	mux := NewMux(ctx, zl, userHandler)
+
 	httpHandler := logger.LoggingMiddleware(zl, mux)
 
 	// 5. Старт HTTP-сервера
@@ -128,4 +134,16 @@ func (a *App) Run(ctx context.Context) error {
 	wg.Wait()    // ждём конец Server.Start, только потом return в main
 
 	return nil
+}
+
+func NewMux(ctx context.Context, logg *zap.Logger, h *user.Handler) http.Handler {
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return logger.LoggingMiddleware(logg, next)
+	})
+
+	r.Post("/api/user/register", h.CreateUser(ctx))
+	r.Post("/api/user/login", h.GetByLogin(ctx))
+
+	return r
 }

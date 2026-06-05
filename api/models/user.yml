@@ -1,7 +1,7 @@
 #file: noinspection YAMLSchemaValidation
 User:
   type: object
-  required: [id, login, fullName]
+  required: [id, login]
   properties:
     id:
       type: string
@@ -10,6 +10,3 @@ User:
     login:
       type: string
       description: Логин
-    fullName:
-      type: string
-      description: ФИО
