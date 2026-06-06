@@ -59,6 +59,27 @@ func (r *PostgresRepo) CreateUser(ctx context.Context, login, password string) (
 }
 
 func (r *PostgresRepo) GetByLogin(ctx context.Context, login, password string) (User, error) {
+	existsQuery, existsArgs, err := r.builder.From(usersTable).
+		Select(goqu.L("1")).
+		Prepared(true).
+		Where(goqu.Ex{"login": login}).
+		ToSQL()
+	if err != nil {
+		return User{}, fmt.Errorf("failed to build find user query: %w", err)
+	}
+
+	existsRows, err := r.db.Query(ctx, existsQuery, existsArgs...)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to query find user: %w", err)
+	}
+
+	if _, err = pgx.CollectOneRow(existsRows, pgx.RowTo[int32]); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, fmt.Errorf("%w: %w", ErrUserNotFound, err)
+		}
+		return User{}, fmt.Errorf("failed to find user: %w", err)
+	}
+
 	query, args, err := r.builder.From(usersTable).
 		Select(goqu.C("id"), goqu.C("login")).
 		Prepared(true).
@@ -70,7 +91,6 @@ func (r *PostgresRepo) GetByLogin(ctx context.Context, login, password string) (
 	}
 
 	rows, err := r.db.Query(ctx, query, args...)
-
 	if err != nil {
 		return User{}, fmt.Errorf("failed to query get user: %w", err)
 	}
@@ -78,7 +98,7 @@ func (r *PostgresRepo) GetByLogin(ctx context.Context, login, password string) (
 	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[User])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return User{}, fmt.Errorf("%w: %w", ErrUserNotFound, err)
+			return User{}, fmt.Errorf("%w: %w", ErrInvalidCredentials, err)
 		}
 		return User{}, fmt.Errorf("failed to get user: %w", err)
 	}

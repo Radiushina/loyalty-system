@@ -1,7 +1,6 @@
 package user_test
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/Radiushina/loyalty-system/internal/user"
@@ -66,22 +65,66 @@ func TestRepo_Insert(t *testing.T) {
 func TestRepo_SelectRow(t *testing.T) {
 	t.Parallel()
 
-	pool, _, _ := postgres.New(t)
-	repo := user.NewRepository(pool)
+	tests := []struct {
+		name    string
+		login   string
+		pass    string
+		prepare func(t *testing.T, repo *user.PostgresRepo) user.User
+		wantErr error
+	}{
+		{
+			name:  "Success get user",
+			login: "user1",
+			pass:  "password",
+			prepare: func(t *testing.T, repo *user.PostgresRepo) user.User {
+				t.Helper()
+				created, err := repo.CreateUser(t.Context(), "user1", "password")
+				require.NoError(t, err)
+				return created
+			},
+			wantErr: nil,
+		},
+		{
+			name:  "Invalid credentials wrong password",
+			login: "user1",
+			pass:  "wrong",
+			prepare: func(t *testing.T, repo *user.PostgresRepo) user.User {
+				t.Helper()
+				_, err := repo.CreateUser(t.Context(), "user1", "password")
+				require.NoError(t, err)
+				return user.User{}
+			},
+			wantErr: user.ErrInvalidCredentials,
+		},
+		{
+			name:    "User not found",
+			login:   "unknown",
+			pass:    "password",
+			wantErr: user.ErrUserNotFound,
+		},
+	}
 
-	const (
-		login = "user1"
-		pass  = "password"
-	)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	created, err := repo.CreateUser(t.Context(), login, pass)
-	require.NoError(t, err)
+			pool, _, _ := postgres.New(t)
+			repo := user.NewRepository(pool)
 
-	found, err := repo.GetByLogin(t.Context(), login, pass)
-	require.NoError(t, err)
-	require.Equal(t, created, found)
+			var want user.User
+			if tc.prepare != nil {
+				want = tc.prepare(t, repo)
+			}
 
-	_, err = repo.GetByLogin(t.Context(), login, "wrong")
-	require.Error(t, err)
-	require.True(t, errors.Is(err, user.ErrUserNotFound) || errors.Is(err, user.ErrInvalidCredentials))
+			found, err := repo.GetByLogin(t.Context(), tc.login, tc.pass)
+			if tc.wantErr != nil {
+				require.Error(t, err)
+				require.ErrorIs(t, err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, want, found)
+		})
+	}
 }

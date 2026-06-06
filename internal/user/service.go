@@ -54,6 +54,10 @@ func (s *Service) GetByLogin(ctx context.Context, login, password string) (AuthS
 	}
 
 	user, err := s.repo.GetByLogin(ctx, login, password)
+	if err != nil {
+		return AuthSession{}, fmt.Errorf("authenticate: %w", err)
+	}
+
 	token, err := s.tokens.Generate(user.ID)
 	if err != nil {
 		return AuthSession{}, fmt.Errorf("generate token: %w", err)
