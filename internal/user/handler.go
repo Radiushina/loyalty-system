@@ -17,8 +17,8 @@ type (
 	}
 
 	ServiceProvider interface {
-		CreateUser(ctx context.Context, login, password string) (User, error)
-		GetByLogin(ctx context.Context, login, password string) (User, error)
+		CreateUser(ctx context.Context, login, password string) (AuthSession, error)
+		GetByLogin(ctx context.Context, login, password string) (AuthSession, error)
 	}
 )
 

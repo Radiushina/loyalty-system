@@ -5,6 +5,12 @@ package config
 type Config struct {
 	Server  ServerConfig   `koanf:"server"`
 	Storage PostgresConfig `koanf:"storage"`
+	Auth    AuthConfig     `koanf:"auth"`
+}
+
+type AuthConfig struct {
+	Secret string `koanf:"secret" yaml:"secret" env:"AUTH_SECRET"`
+	TTL    string `koanf:"ttl" yaml:"ttl" env:"AUTH_TTL"`
 }
 
 type ServerConfig struct {

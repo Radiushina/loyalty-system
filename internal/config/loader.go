@@ -53,6 +53,7 @@ func (l *Loader) Load() (*Config, error) {
 	if err := l.loadEnv(); err != nil {
 		return nil, fmt.Errorf("failed to load environment variables: %w", err)
 	}
+	l.loadStandardEnv()
 
 	// 4. Определение и анализ CLI флагов.
 	l.defineFlags()
@@ -108,6 +109,15 @@ func (l *Loader) loadEnv() error {
 		return fmt.Errorf("loadEnv: %w", err)
 	}
 	return nil
+}
+
+func (l *Loader) loadStandardEnv() {
+	if value := os.Getenv("AUTH_SECRET"); value != "" {
+		_ = l.k.Set("auth.secret", value) //nolint:errcheck
+	}
+	if value := os.Getenv("AUTH_TTL"); value != "" {
+		_ = l.k.Set("auth.ttl", value) //nolint:errcheck
+	}
 }
 
 // defineFlags defines all CLI flags based on config structure.

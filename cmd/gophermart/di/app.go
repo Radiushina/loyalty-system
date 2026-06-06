@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Radiushina/loyalty-system/internal/auth"
 	"github.com/Radiushina/loyalty-system/internal/config"
 	"github.com/Radiushina/loyalty-system/internal/logger"
 	"github.com/Radiushina/loyalty-system/internal/user"
@@ -78,8 +79,14 @@ func (a *App) initialize(ctx context.Context) error {
 	)
 
 	// 4. Инициализируем repo, service, handler
+	authTTL, err := time.ParseDuration(cfg.Auth.TTL)
+	if err != nil {
+		return fmt.Errorf("parse auth ttl: %w", err)
+	}
+
 	userRepo := user.NewRepository(dbPool)
-	userSvc := user.NewService(userRepo)
+	tokenProvider := auth.NewJWT(cfg.Auth.Secret, authTTL)
+	userSvc := user.NewService(userRepo, tokenProvider)
 	userHandler := user.NewHandler(userSvc, zl)
 	mux := NewMux(ctx, zl, userHandler)
 

@@ -15,5 +15,9 @@ func DefaultConfig() Config {
 			User:     "developer",
 			Password: "my_pass",
 		},
+		Auth: AuthConfig{
+			Secret: "loyalty-system-secret",
+			TTL:    "24h",
+		},
 	}
 }

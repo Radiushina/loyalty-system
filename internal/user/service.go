@@ -3,47 +3,61 @@ package user
 import (
 	"context"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 type (
 	Service struct {
-		repo RepoProvider
+		repo   RepoProvider
+		tokens TokenProvider
 	}
 
 	RepoProvider interface {
 		CreateUser(ctx context.Context, ogin, password string) (User, error)
 		GetByLogin(ctx context.Context, ogin, password string) (User, error)
 	}
+
+	TokenProvider interface {
+		Generate(userID uuid.UUID) (string, error)
+	}
 )
 
-func NewService(repo RepoProvider) *Service {
+func NewService(repo RepoProvider, tokens TokenProvider) *Service {
 	return &Service{
-		repo: repo,
+		repo:   repo,
+		tokens: tokens,
 	}
 }
 
-func (s *Service) CreateUser(ctx context.Context, login, password string) (User, error) {
+func (s *Service) CreateUser(ctx context.Context, login, password string) (AuthSession, error) {
 	if login == "" || password == "" {
-		return User{}, fmt.Errorf("%w: login and password are required", ErrInvalidCredentials)
+		return AuthSession{}, fmt.Errorf("%w: login and password are required", ErrInvalidCredentials)
 	}
 
 	user, err := s.repo.CreateUser(ctx, login, password)
 	if err != nil {
-		return User{}, fmt.Errorf("create user: %w", err)
+		return AuthSession{}, fmt.Errorf("create user: %w", err)
 	}
 
-	return user, nil
+	token, err := s.tokens.Generate(user.ID)
+	if err != nil {
+		return AuthSession{}, fmt.Errorf("generate token: %w", err)
+	}
+
+	return NewAuthSession(user, token), nil
 }
 
-func (s *Service) GetByLogin(ctx context.Context, login, password string) (User, error) {
+func (s *Service) GetByLogin(ctx context.Context, login, password string) (AuthSession, error) {
 	if login == "" || password == "" {
-		return User{}, fmt.Errorf("%w: login and password are required", ErrInvalidCredentials)
+		return AuthSession{}, fmt.Errorf("%w: login and password are required", ErrInvalidCredentials)
 	}
 
 	user, err := s.repo.GetByLogin(ctx, login, password)
+	token, err := s.tokens.Generate(user.ID)
 	if err != nil {
-		return User{}, fmt.Errorf("authenticate: %w", err)
+		return AuthSession{}, fmt.Errorf("generate token: %w", err)
 	}
 
-	return user, nil
+	return NewAuthSession(user, token), nil
 }

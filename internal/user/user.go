@@ -29,7 +29,17 @@ type UserResponse struct {
 	Login string    `json:"login"`
 }
 
-type RegisterSuccess struct {
-	User  UserResponse
-	Token string
+type AuthSession struct {
+	User  UserResponse `json:"user"`
+	Token string       `json:"token"`
+}
+
+func NewAuthSession(u User, token string) AuthSession {
+	return AuthSession{
+		User: UserResponse{
+			ID:    u.ID,
+			Login: u.Login,
+		},
+		Token: token,
+	}
 }
