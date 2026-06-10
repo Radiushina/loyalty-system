@@ -15,7 +15,7 @@ func TestRepo_Insert(t *testing.T) {
 		name    string
 		login   string
 		pass    string
-		prepare func(t *testing.T, repo *user.PostgresRepo)
+		prepare func(t *testing.T, repo *user.UsersRepo)
 		wantErr error
 	}{
 		{
@@ -28,7 +28,7 @@ func TestRepo_Insert(t *testing.T) {
 			name:  "Not unique login",
 			login: "user1",
 			pass:  "password2",
-			prepare: func(t *testing.T, repo *user.PostgresRepo) {
+			prepare: func(t *testing.T, repo *user.UsersRepo) {
 				t.Helper()
 				_, err := repo.CreateUser(t.Context(), "user1", "password")
 				require.NoError(t, err)
@@ -69,14 +69,14 @@ func TestRepo_SelectRow(t *testing.T) {
 		name    string
 		login   string
 		pass    string
-		prepare func(t *testing.T, repo *user.PostgresRepo) user.User
+		prepare func(t *testing.T, repo *user.UsersRepo) user.User
 		wantErr error
 	}{
 		{
 			name:  "Success get user",
 			login: "user1",
 			pass:  "password",
-			prepare: func(t *testing.T, repo *user.PostgresRepo) user.User {
+			prepare: func(t *testing.T, repo *user.UsersRepo) user.User {
 				t.Helper()
 				created, err := repo.CreateUser(t.Context(), "user1", "password")
 				require.NoError(t, err)
@@ -88,7 +88,7 @@ func TestRepo_SelectRow(t *testing.T) {
 			name:  "Invalid credentials wrong password",
 			login: "user1",
 			pass:  "wrong",
-			prepare: func(t *testing.T, repo *user.PostgresRepo) user.User {
+			prepare: func(t *testing.T, repo *user.UsersRepo) user.User {
 				t.Helper()
 				_, err := repo.CreateUser(t.Context(), "user1", "password")
 				require.NoError(t, err)

@@ -12,6 +12,7 @@ import (
 	"github.com/Radiushina/loyalty-system/internal/auth"
 	"github.com/Radiushina/loyalty-system/internal/config"
 	"github.com/Radiushina/loyalty-system/internal/logger"
+	"github.com/Radiushina/loyalty-system/internal/order"
 	"github.com/Radiushina/loyalty-system/internal/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -88,7 +89,12 @@ func (a *App) initialize(ctx context.Context) error {
 	tokenProvider := auth.NewJWT(cfg.Auth.Secret, authTTL)
 	userSvc := user.NewService(userRepo, tokenProvider)
 	userHandler := user.NewHandler(userSvc, zl)
-	mux := NewMux(ctx, zl, userHandler)
+
+	orderRepo := order.NewRepository(dbPool)
+	orderSvc := order.NewService(orderRepo)
+	orderHandler := order.NewHandel(orderSvc, zl)
+
+	mux := NewMux(ctx, tokenProvider, userHandler, orderHandler)
 
 	httpHandler := logger.LoggingMiddleware(zl, mux)
 
@@ -143,14 +149,17 @@ func (a *App) Run(ctx context.Context) error {
 	return nil
 }
 
-func NewMux(ctx context.Context, logg *zap.Logger, h *user.Handler) http.Handler {
+func NewMux(ctx context.Context, jwt *auth.JWT, uh *user.Handler, oh *order.Handler) http.Handler {
 	r := chi.NewRouter()
-	r.Use(func(next http.Handler) http.Handler {
-		return logger.LoggingMiddleware(logg, next)
-	})
 
-	r.Post("/api/user/register", h.CreateUser(ctx))
-	r.Post("/api/user/login", h.GetByLogin(ctx))
+	r.Post("/api/user/register", uh.CreateUser(ctx))
+	r.Post("/api/user/login", uh.GetByLogin(ctx))
+
+	r.Group(func(r chi.Router) {
+		r.Use(user.NewAuthMiddleware(jwt))
+		r.Post("/api/user/orders", oh.CreateOrder())
+		r.Get("/api/user/orders", oh.GetOrders())
+	})
 
 	return r
 }

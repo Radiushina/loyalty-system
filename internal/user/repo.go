@@ -17,19 +17,19 @@ var (
 	usersTable = goqu.T("users")
 )
 
-type PostgresRepo struct {
+type UsersRepo struct {
 	db      *pgxpool.Pool
 	builder goqu.DialectWrapper
 }
 
-func NewRepository(db *pgxpool.Pool) *PostgresRepo {
-	return &PostgresRepo{
+func NewRepository(db *pgxpool.Pool) *UsersRepo {
+	return &UsersRepo{
 		db:      db,
 		builder: goqu.Dialect("postgres"),
 	}
 }
 
-func (r *PostgresRepo) CreateUser(ctx context.Context, login, password string) (User, error) {
+func (r *UsersRepo) CreateUser(ctx context.Context, login, password string) (User, error) {
 	query, args, err := r.builder.Insert(usersTable).
 		Prepared(true).
 		Rows(goqu.Record{
@@ -58,7 +58,7 @@ func (r *PostgresRepo) CreateUser(ctx context.Context, login, password string) (
 	return u, nil
 }
 
-func (r *PostgresRepo) GetByLogin(ctx context.Context, login, password string) (User, error) {
+func (r *UsersRepo) GetByLogin(ctx context.Context, login, password string) (User, error) {
 	existsQuery, existsArgs, err := r.builder.From(usersTable).
 		Select(goqu.L("1")).
 		Prepared(true).

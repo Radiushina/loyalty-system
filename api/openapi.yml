@@ -9,6 +9,8 @@ info:
 tags:
   - name: Auth
     description: Методы авторизации
+  - name: Orders
+    description: Методы взаимодействия с заказами
 
 paths:
   /api/user/register:
@@ -40,7 +42,7 @@ paths:
                 required: [ user, token ]
                 properties:
                   user:
-                    $ref: './models/user.yml#/User'
+                    $ref: './common/user.yml#/User'
                   token:
                     type: string
         400:
@@ -79,7 +81,7 @@ paths:
                 required: [ user, token ]
                 properties:
                   user:
-                    $ref: './models/user.yml#/User'
+                    $ref: './common/user.yml#/User'
                   token:
                     type: string
         400:
@@ -89,16 +91,87 @@ paths:
         default:
           $ref: '#/components/responses/default'
 
+  /api/user/orders:
+    get:
+      summary: Получение списка загруженных номеров заказов
+      security:
+        - BearerAuth: [ ]
+      description: |
+        Номера заказа в выдаче отсортированы по времени загрузки от самых новых к самым старым.
+        Формат даты — RFC3339.
+      tags:
+        - Orders
+      responses:
+        200:
+          description: 'Успешная обработка запроса'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './common/order.yml#/Order'
+              example:
+                - number: "9278923470"
+                  status: PROCESSED
+                  accrual: 500
+                  uploaded_at: "2020-12-10T15:15:45+03:00"
+                - number: "12345678903"
+                  status: PROCESSING
+                  uploaded_at: "2020-12-10T15:12:01+03:00"
+                - number: "346436439"
+                  status: INVALID
+                  uploaded_at: "2020-12-09T16:09:53+03:00"
+        204:
+          description: 'Нет данных для ответа'
+        401:
+          $ref: '#/components/responses/unauthorized'
+        500:
+          $ref: '#/components/responses/500'
+
+    post:
+      summary: Загрузка номера заказа
+      description: |
+        Номером заказа является последовательность цифр произвольной длины.
+        Номер заказа может быть проверен на корректность ввода с помощью алгоритма Луна.
+      security:
+        - BearerAuth: [ ]
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: Номер заказа
+              example: "12345678903"
+      responses:
+        200:
+          description: 'Номер заказа уже был загружен этим пользователем'
+        202:
+          description: 'Новый номер заказа принят в обработку'
+        400:
+          $ref: '#/components/responses/400'
+        401:
+          $ref: '#/components/responses/unauthorized'
+        409:
+          $ref: '#/components/responses/order_was_uploaded'
+        422:
+          $ref: '#/components/responses/422'
+        500:
+          $ref: '#/components/responses/500'
+
+
+
 components:
   securitySchemes:
-    APIKeyAuth:
-      type: apiKey
-      in: header
-      name: Authorization
-    SourceAPIKeyAuth:
-      type: apiKey
-      in: header
-      name: Authorization
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT-токен, полученный при регистрации (`POST /api/user/register`) или входе (`POST /api/user/login`).
+        Передаётся в заголовке `Authorization` в формате `Bearer <token>`.
   responses:
     '400':
       description: 'Неверный формат запроса'
@@ -113,15 +186,20 @@ components:
             validate:
               summary: Validate Example
               value: { "msg": "validate" }
-
     '401':
-      description: 'Ошибка авторизации'
+      description: 'Неверная пара логин/пароль'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/UnsuccessfulResponse'
-          example: { "msg": "unauthorized" }
-
+          example: { "msg": "invalid login/password pair" }
+    'unauthorized':
+      description: 'Пользователь не аутентифицирован'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "user unauthorized" }
     '403':
       description: 'Ошибка проверки прав доступа'
       content:
@@ -143,6 +221,27 @@ components:
           schema:
             $ref: '#/components/schemas/UnsuccessfulResponse'
           example: { "msg": "login is already taken" }
+    'order_was_uploaded':
+      description: 'Номер заказа уже был загружен другим пользователем'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "the order number has already been uploaded by another user." }
+    '422':
+      description: 'Неверный формат номера заказа'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "invalid order number format" }
+    '500':
+      description: 'Внутренняя ошибка сервера'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "internal server error" }
     default:
       description: 'Внутренняя ошибка сервиса'
       content:

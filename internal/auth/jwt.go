@@ -35,3 +35,32 @@ func (j *JWT) Generate(userID uuid.UUID) (string, error) {
 
 	return signed, nil
 }
+
+func (j *JWT) Parse(tokenString string) (uuid.UUID, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+		if token.Method != jwt.SigningMethodHS256 {
+			return nil, fmt.Errorf("unexpected signing method")
+		}
+		return j.secret, nil
+	})
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("parse jwt: %w", err)
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return uuid.Nil, fmt.Errorf("invalid token")
+	}
+
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		return uuid.Nil, fmt.Errorf("invalid subject")
+	}
+
+	userID, err := uuid.Parse(sub)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("parse subject: %w", err)
+	}
+
+	return userID, nil
+}
