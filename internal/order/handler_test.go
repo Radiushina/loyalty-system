@@ -211,7 +211,7 @@ func TestHandler_GetOrders(t *testing.T) {
 					Return([]order.Order{
 						{
 							Number:     "79927398713",
-							Status:     "NEW",
+							Status:     order.New,
 							UploadedAt: uploadedAt,
 						},
 					}, nil)
@@ -224,7 +224,7 @@ func TestHandler_GetOrders(t *testing.T) {
 				require.NoError(t, json.Unmarshal(body, &got))
 				require.Len(t, got, 1)
 				require.Equal(t, "79927398713", got[0].Number)
-				require.Equal(t, "NEW", got[0].Status)
+				require.Equal(t, order.New, got[0].Status)
 				require.Equal(t, uploadedAt, got[0].UploadedAt)
 				require.Nil(t, got[0].Accrual)
 			},

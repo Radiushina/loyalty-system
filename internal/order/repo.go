@@ -36,7 +36,7 @@ func (r *OrdersRepo) InsertOrder(ctx context.Context, userID uuid.UUID, orderNum
 		Rows(goqu.Record{
 			"user_id":     userID,
 			"number":      orderNumber,
-			"status":      "NEW",
+			"status":      New,
 			"uploaded_at": goqu.L("NOW()"),
 		}).
 		ToSQL()

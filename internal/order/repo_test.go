@@ -109,7 +109,7 @@ func TestRepo_Insert(t *testing.T) {
 			require.Len(t, orders, 1)
 			require.Equal(t, tc.userID, orders[0].UserId)
 			require.Equal(t, tc.orderNumber, orders[0].Number)
-			require.Equal(t, "NEW", orders[0].Status)
+			require.Equal(t, order.New, orders[0].Status)
 			require.Equal(t, 0, orders[0].Accrual)
 			require.NotEmpty(t, orders[0].Id)
 			require.False(t, orders[0].UploadedAt.IsZero())
@@ -144,8 +144,8 @@ func TestRepo_Select(t *testing.T) {
 				require.NoError(t, repo.InsertOrder(t.Context(), userA, "33763346"))
 			},
 			want: []order.Order{
-				{Number: "33763346", Status: "NEW", Accrual: 0},
-				{Number: "33763345", Status: "NEW", Accrual: 0},
+				{Number: "33763346", Status: order.New, Accrual: 0},
+				{Number: "33763345", Status: order.New, Accrual: 0},
 			},
 		},
 		{

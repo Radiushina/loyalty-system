@@ -22,7 +22,6 @@ type (
 	ServiceProvider interface {
 		CreateOrder(ctx context.Context, userID uuid.UUID, orderNumber string) error
 		SelectOrders(ctx context.Context, userID uuid.UUID) ([]Order, error)
-		RemoteScoring(ctx context.Context) error
 	}
 )
 

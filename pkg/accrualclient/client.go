@@ -42,7 +42,7 @@ func (c *AccrualClient) GetOrderInfo(ctx context.Context, orderNumber string) (O
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/orders/"+url.PathEscape(orderNumber),
+		c.baseURL+OrderInfoPathPrefix+url.PathEscape(orderNumber),
 		nil,
 	)
 	if err != nil {

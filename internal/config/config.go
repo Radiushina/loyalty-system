@@ -1,26 +1,62 @@
 package config
 
-// Config - это унифицированная структура конфигурации, поддерживающая источники данных YAML, ENV и CLI.
-// Приоритет: CLI flags > Environment variables > YAML file > Default values
+import (
+	"net"
+	"net/url"
+)
+
+// Config — унифицированная структура конфигурации (YAML, ENV, CLI).
+// Приоритет: CLI flags > переменные окружения > YAML > значения по умолчанию.
 type Config struct {
 	Server  ServerConfig   `koanf:"server"`
 	Storage PostgresConfig `koanf:"storage"`
 	Auth    AuthConfig     `koanf:"auth"`
+	Accrual AccrualConfig  `koanf:"accrual"`
 }
 
 type AuthConfig struct {
-	Secret string `koanf:"secret" yaml:"secret" env:"AUTH_SECRET"`
-	TTL    string `koanf:"ttl" yaml:"ttl" env:"AUTH_TTL"`
+	Secret string `koanf:"secret" yaml:"secret"`
+	TTL    string `koanf:"ttl" yaml:"ttl"`
 }
 
+// ServerConfig — HTTP-сервер накопительной системы.
+// RUN_ADDRESS или флаг -a.
 type ServerConfig struct {
-	Address string `koanf:"address" yaml:"address" env:"HTTP_ADDRESS"`
+	RunAddress string `koanf:"run_address" yaml:"run_address"`
 }
 
+// AccrualConfig — система расчёта начислений.
+// ACCRUAL_SYSTEM_ADDRESS или флаг -r.
+type AccrualConfig struct {
+	Address string `koanf:"address" yaml:"address"`
+}
+
+// PostgresConfig — подключение к БД.
+// DATABASE_URI или флаг -d; при пустом URI собирается из полей host/port/...
 type PostgresConfig struct {
-	Host     string `koanf:"host" yaml:"host" env:"POSTGRES_HOST" flag:"postgres-host"`
-	Port     string `koanf:"port" yaml:"port" env:"POSTGRES_PORT" flag:"postgres-port"`
-	Database string `koanf:"database" yaml:"database" env:"POSTGRES_DB" flag:"postgres-database"`
-	User     string `koanf:"user" yaml:"user" env:"POSTGRES_USER" flag:"postgres-user"`
-	Password string `koanf:"password" yaml:"password" env:"POSTGRES_PASSWORD" flag:"postgres-password"`
+	URI      string `koanf:"uri" yaml:"uri"`
+	Host     string `koanf:"host" yaml:"host"`
+	Port     string `koanf:"port" yaml:"port"`
+	Database string `koanf:"database" yaml:"database"`
+	User     string `koanf:"user" yaml:"user"`
+	Password string `koanf:"password" yaml:"password"`
+}
+
+// DatabaseDSN возвращает строку подключения к PostgreSQL.
+func (c PostgresConfig) DatabaseDSN() string {
+	if c.URI != "" {
+		return c.URI
+	}
+
+	u := &url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(c.User, c.Password),
+		Host:   net.JoinHostPort(c.Host, c.Port),
+		Path:   "/" + c.Database,
+	}
+	q := u.Query()
+	q.Set("sslmode", "disable")
+	u.RawQuery = q.Encode()
+
+	return u.String()
 }

@@ -1,12 +1,10 @@
 package config
 
-// DefaultConfig возвращает структуру Config заполненную значениями по умолчанию.
-// Эти значения по умолчанию используются в качестве базового слоя, который может
-// быть переопределен другими параметрами YAML config, environment variables, or CLI flags.
+// DefaultConfig возвращает конфигурацию со значениями по умолчанию.
 func DefaultConfig() Config {
 	return Config{
 		Server: ServerConfig{
-			Address: ":8080",
+			RunAddress: ":8080",
 		},
 		Storage: PostgresConfig{
 			Host:     "localhost",
@@ -18,6 +16,9 @@ func DefaultConfig() Config {
 		Auth: AuthConfig{
 			Secret: "loyalty-system-secret",
 			TTL:    "24h",
+		},
+		Accrual: AccrualConfig{
+			Address: "http://localhost:8082",
 		},
 	}
 }

@@ -3,9 +3,7 @@ package di
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
-	"net/url"
 	"sync"
 	"time"
 
@@ -65,7 +63,7 @@ func (a *App) initialize(ctx context.Context) error {
 	a.logger = zl
 
 	// 3. Инициализируем БД. Не defer Close здесь — пул живёт до gracefulShutdown в NewApp.
-	dbPool, err := pgxpool.New(ctx, postgresDSN(cfg.Storage))
+	dbPool, err := pgxpool.New(ctx, cfg.Storage.DatabaseDSN())
 	if err != nil {
 		return fmt.Errorf("connect postgres: %w", err)
 	}
@@ -74,10 +72,8 @@ func (a *App) initialize(ctx context.Context) error {
 		return fmt.Errorf("ping postgres: %w", err)
 	}
 	a.db = dbPool
-	zl.Info("postgres connected",
-		zap.String("host", cfg.Storage.Host),
-		zap.String("database", cfg.Storage.Database),
-	)
+	zl.Info("postgres connected", zap.String("database_uri", cfg.Storage.DatabaseDSN()))
+	zl.Info("accrual system configured", zap.String("address", cfg.Accrual.Address))
 
 	// 4. Инициализируем repo, service, handler
 	authTTL, err := time.ParseDuration(cfg.Auth.TTL)
@@ -100,25 +96,12 @@ func (a *App) initialize(ctx context.Context) error {
 
 	// 5. Старт HTTP-сервера
 	srv := http.Server{
-		Addr:    cfg.Server.Address,
+		Addr:    cfg.Server.RunAddress,
 		Handler: httpHandler,
 	}
 
 	a.server = NewServer(&srv)
 	return nil
-}
-
-func postgresDSN(c config.PostgresConfig) string {
-	u := &url.URL{
-		Scheme: "postgres",
-		User:   url.UserPassword(c.User, c.Password),
-		Host:   net.JoinHostPort(c.Host, c.Port),
-		Path:   "/" + c.Database,
-	}
-	q := u.Query()
-	q.Set("sslmode", "disable")
-	u.RawQuery = q.Encode()
-	return u.String()
 }
 
 // Run - запуск App
@@ -149,16 +132,16 @@ func (a *App) Run(ctx context.Context) error {
 	return nil
 }
 
-func NewMux(ctx context.Context, jwt *auth.JWT, uh *user.Handler, oh *order.Handler) http.Handler {
+func NewMux(ctx context.Context, jwt *auth.JWT, userHandler *user.Handler, orderHandler *order.Handler) http.Handler {
 	r := chi.NewRouter()
 
-	r.Post("/api/user/register", uh.CreateUser(ctx))
-	r.Post("/api/user/login", uh.GetByLogin(ctx))
+	r.Post("/api/user/register", userHandler.CreateUser(ctx))
+	r.Post("/api/user/login", userHandler.GetByLogin(ctx))
 
 	r.Group(func(r chi.Router) {
 		r.Use(user.NewAuthMiddleware(jwt))
-		r.Post("/api/user/orders", oh.CreateOrder())
-		r.Get("/api/user/orders", oh.GetOrders())
+		r.Post("/api/user/orders", orderHandler.CreateOrder())
+		r.Get("/api/user/orders", orderHandler.GetOrders())
 	})
 
 	return r

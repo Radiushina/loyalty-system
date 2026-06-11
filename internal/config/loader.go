@@ -39,36 +39,37 @@ func NewLoader(configPath string) *Loader {
 }
 
 func (l *Loader) Load() (*Config, error) {
-	// 1. Загружаем из  default
+	// 1. Загружаем значения по умолчанию.
 	if err := l.loadDefaults(); err != nil {
 		return nil, fmt.Errorf("failed to load defaults: %w", err)
 	}
 
-	// 2. Загружаем с YAML file (если существует)
+	// 2. Загружаем из YAML-файла (если существует).
 	if err := l.loadYAML(); err != nil {
 		return nil, fmt.Errorf("failed to load YAML config: %w", err)
 	}
 
-	// 3. Загружаем с environment variables
+	// 3. Загружаем из переменных окружения.
 	if err := l.loadEnv(); err != nil {
 		return nil, fmt.Errorf("failed to load environment variables: %w", err)
 	}
 	l.loadStandardEnv()
 
-	// 4. Определение и анализ CLI флагов.
+	// 4. Определяем и парсим CLI-флаги.
 	l.defineFlags()
 	if err := l.flags.Parse(os.Args[1:]); err != nil {
 		return nil, fmt.Errorf("failed to parse flags: %w", err)
 	}
 
-	// 5. Загрузка CLI флагов.
+	// 5. Загружаем значения из CLI-флагов.
 	l.loadFlags()
 
-	// Unmarshal в Config struct
+	// Unmarshal в структуру Config.
 	var cfg Config
 	if err := l.k.Unmarshal("", &cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
+
 	return &cfg, nil
 }
 
@@ -80,11 +81,11 @@ func (l *Loader) loadDefaults() error {
 	return nil
 }
 
-// loadYAML загружаем конфигурацию from YAML file.
+// loadYAML загружает конфигурацию из YAML-файла.
 func (l *Loader) loadYAML() error {
-	// Проверяем существует ли файл
+	// Проверяем, существует ли файл.
 	if _, err := os.Stat(l.configPath); os.IsNotExist(err) {
-		// Config file doesn't exist, skip (not an error)
+		// Файл конфигурации не найден — пропускаем (это не ошибка).
 		return nil
 	}
 
@@ -111,37 +112,46 @@ func (l *Loader) loadEnv() error {
 	return nil
 }
 
+// loadStandardEnv загружает переменные окружения из задания и auth.
 func (l *Loader) loadStandardEnv() {
-	if value := os.Getenv("AUTH_SECRET"); value != "" {
-		_ = l.k.Set("auth.secret", value) //nolint:errcheck
+	setEnv := func(key, envName string) {
+		if value := os.Getenv(envName); value != "" {
+			_ = l.k.Set(key, value) //nolint:errcheck
+		}
 	}
-	if value := os.Getenv("AUTH_TTL"); value != "" {
-		_ = l.k.Set("auth.ttl", value) //nolint:errcheck
-	}
+
+	setEnv("server.run_address", "RUN_ADDRESS")
+	setEnv("storage.uri", "DATABASE_URI")
+	setEnv("accrual.address", "ACCRUAL_SYSTEM_ADDRESS")
+	setEnv("auth.secret", "AUTH_SECRET")
+	setEnv("auth.ttl", "AUTH_TTL")
 }
 
-// defineFlags defines all CLI flags based on config structure.
+// defineFlags определяет CLI-флаги на основе структуры конфигурации.
 func (l *Loader) defineFlags() {
-	// Server flags
-	l.flags.String("http-address", "", "HTTP server address")
+	// Флаги из задания.
+	l.flags.String("a", "", "адрес и порт HTTP-сервера")
+	l.flags.String("d", "", "URI подключения к базе данных")
+	l.flags.String("r", "", "адрес системы расчёта начислений")
 
-	// Storage flags - Postgres
-	l.flags.String("postgres-host", "", "PostgreSQL host")
-	l.flags.String("postgres-port", "", "PostgreSQL port")
-	l.flags.String("postgres-database", "", "PostgreSQL database name")
-	l.flags.String("postgres-user", "", "PostgreSQL user")
-	l.flags.String("postgres-password", "", "PostgreSQL password")
+	// Дополнительные флаги для локальной разработки и docker-compose.
+	l.flags.String("postgres-host", "", "хост PostgreSQL")
+	l.flags.String("postgres-port", "", "порт PostgreSQL")
+	l.flags.String("postgres-database", "", "имя базы PostgreSQL")
+	l.flags.String("postgres-user", "", "пользователь PostgreSQL")
+	l.flags.String("postgres-password", "", "пароль PostgreSQL")
 
-	// Config file flag
-	l.flags.StringVar(&l.configPath, "config", l.configPath, "Path to configuration file")
+	// Флаг пути к YAML-файлу.
+	l.flags.StringVar(&l.configPath, "config", l.configPath, "путь к YAML-файлу конфигурации")
 }
 
-// loadFlags loads configuration from parsed CLI flags.
+// loadFlags загружает конфигурацию из переданных CLI-флагов.
 func (l *Loader) loadFlags() {
-	// Map CLI flags to config structure
-	//nolint:dupl // there are different mappings.
+	// Соответствие CLI-флагов ключам в структуре конфигурации.
 	flagMapping := map[string]string{
-		"http-address":      "server.address",
+		"a":                 "server.run_address",
+		"d":                 "storage.uri",
+		"r":                 "accrual.address",
 		"postgres-host":     "storage.host",
 		"postgres-port":     "storage.port",
 		"postgres-database": "storage.database",
@@ -149,7 +159,7 @@ func (l *Loader) loadFlags() {
 		"postgres-password": "storage.password",
 	}
 
-	// Set values from flags if they were explicitly provided
+	// Устанавливаем значения только для явно переданных флагов.
 	l.flags.Visit(func(f *pflag.Flag) {
 		if configKey, ok := flagMapping[f.Name]; ok {
 			_ = l.k.Set(configKey, f.Value.String()) //nolint:errcheck
