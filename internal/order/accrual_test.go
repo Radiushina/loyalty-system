@@ -1,6 +1,8 @@
 package order_test
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/Radiushina/loyalty-system/internal/order"
@@ -51,4 +53,19 @@ func TestApplyAccrualInfo(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, order.Processed, o.Status)
 	require.Equal(t, 500, o.Accrual)
+}
+
+func TestPollOrder(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(server.Close)
+
+	client := accrualclient.New(accrualclient.Config{Address: server.URL})
+
+	outcome, _, _, err := order.PollOrder(t.Context(), client, "79927398713")
+	require.NoError(t, err)
+	require.Equal(t, order.AccrualPollNotRegistered, outcome)
 }

@@ -63,7 +63,8 @@ func TestRepo_Insert(t *testing.T) {
 
 				// 1. Пользователь уже загрузил этот номер заказа.
 				seedUserWithID(t, pool, userA)
-				require.NoError(t, repo.InsertOrder(t.Context(), userA, "33763345"))
+				_, err := repo.InsertOrder(t.Context(), userA, "33763345")
+				require.NoError(t, err)
 			},
 			wantErr: order.ErrOrderAlreadyUploadedByUser,
 		},
@@ -76,7 +77,8 @@ func TestRepo_Insert(t *testing.T) {
 
 				// 1. userA уже загрузил номер заказа.
 				seedUserWithID(t, pool, userA)
-				require.NoError(t, repo.InsertOrder(t.Context(), userA, "33763345"))
+				_, err := repo.InsertOrder(t.Context(), userA, "33763345")
+				require.NoError(t, err)
 
 				// 2. userB пытается загрузить тот же номер.
 				seedUserWithID(t, pool, userB)
@@ -97,7 +99,7 @@ func TestRepo_Insert(t *testing.T) {
 			tc.prepare(t, pool, repo)
 
 			// 3. Вызываем InsertOrder.
-			err := repo.InsertOrder(t.Context(), tc.userID, tc.orderNumber)
+			_, err := repo.InsertOrder(t.Context(), tc.userID, tc.orderNumber)
 			require.ErrorIs(t, err, tc.wantErr)
 			if err != nil {
 				return
@@ -139,9 +141,11 @@ func TestRepo_Select(t *testing.T) {
 				seedUserWithID(t, pool, userA)
 
 				// 2. Вставляем два заказа через репозиторий orders.
-				require.NoError(t, repo.InsertOrder(t.Context(), userA, "33763345"))
+				_, err := repo.InsertOrder(t.Context(), userA, "33763345")
+				require.NoError(t, err)
 				time.Sleep(10 * time.Millisecond) // uploaded_at различается → проверяем сортировку DESC.
-				require.NoError(t, repo.InsertOrder(t.Context(), userA, "33763346"))
+				_, err = repo.InsertOrder(t.Context(), userA, "33763346")
+				require.NoError(t, err)
 			},
 			want: []order.Order{
 				{Number: "33763346", Status: order.New, Accrual: 0},

@@ -1,8 +1,10 @@
 package order
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Radiushina/loyalty-system/pkg/accrualclient"
 )
@@ -69,3 +71,31 @@ const (
 	// AccrualPollTransientError — 500 или сеть: повторить позже без смены статуса.
 	AccrualPollTransientError AccrualPollOutcome = "transient_error"
 )
+
+// PollOrder опрашивает внешнюю систему расчёта по номеру заказа.
+// Возвращаем:
+// - AccrualPollOutcome что делать воркеру
+// - accrualclient.OrderInfo информацию о заказе
+// - time.Duration сколько ждать перед следующим запросом, когда внешняя система расчета ответила 429
+// - error
+func PollOrder(ctx context.Context, client accrualclient.Provider, number string) (AccrualPollOutcome, accrualclient.OrderInfo, time.Duration, error) {
+	info, err := client.GetOrderInfo(ctx, number)
+	if err == nil {
+		return AccrualPollUpdated, info, 0, nil
+	}
+
+	if errors.Is(err, accrualclient.ErrNotFound) {
+		return AccrualPollNotRegistered, accrualclient.OrderInfo{}, 0, nil
+	}
+
+	var rateLimited *accrualclient.RateLimitedError
+	if errors.As(err, &rateLimited) {
+		return AccrualPollRateLimited, accrualclient.OrderInfo{}, rateLimited.RetryAfter, nil
+	}
+
+	if errors.Is(err, accrualclient.ErrServer) {
+		return AccrualPollTransientError, accrualclient.OrderInfo{}, 0, err
+	}
+
+	return AccrualPollTransientError, accrualclient.OrderInfo{}, 0, err
+}

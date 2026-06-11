@@ -28,7 +28,7 @@ func TestService_CreateOrder(t *testing.T) {
 			prepare: func(repo *order_mocks.RepoProvider) {
 				repo.EXPECT().
 					InsertOrder(mock.Anything, userID, validOrderNumber).
-					Return(nil)
+					Return(uuid.MustParse("00000000-0000-0000-0000-000000000010"), nil)
 			},
 		},
 		{
@@ -52,7 +52,7 @@ func TestService_CreateOrder(t *testing.T) {
 				tc.prepare(repo)
 			}
 
-			svc := order.NewService(repo)
+			svc := order.NewService(repo, nil)
 
 			err := svc.CreateOrder(t.Context(), userID, tc.orderNumber)
 			require.ErrorIs(t, err, tc.wantErr)

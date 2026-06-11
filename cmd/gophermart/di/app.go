@@ -12,16 +12,18 @@ import (
 	"github.com/Radiushina/loyalty-system/internal/logger"
 	"github.com/Radiushina/loyalty-system/internal/order"
 	"github.com/Radiushina/loyalty-system/internal/user"
+	"github.com/Radiushina/loyalty-system/pkg/accrualclient"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
 type App struct {
-	cfg    *config.Config
-	logger *zap.Logger
-	db     *pgxpool.Pool
-	server *Server
+	cfg         *config.Config
+	logger      *zap.Logger
+	db          *pgxpool.Pool
+	server      *Server
+	accrualPool *order.AccrualWorkerPool
 }
 
 func NewApp() (*App, func(), error) {
@@ -87,7 +89,26 @@ func (a *App) initialize(ctx context.Context) error {
 	userHandler := user.NewHandler(userSvc, zl)
 
 	orderRepo := order.NewRepository(dbPool)
-	orderSvc := order.NewService(orderRepo)
+
+	accrualClient := accrualclient.New(accrualclient.Config{Address: cfg.Accrual.Address})
+	pollInterval, err := cfg.Accrual.PollIntervalDuration()
+	if err != nil {
+		return fmt.Errorf("parse accrual poll interval: %w", err)
+	}
+
+	accrualPool := order.NewAccrualWorkerPool(
+		order.WorkerPoolConfig{
+			Workers:      cfg.Accrual.Workers,
+			PollInterval: pollInterval,
+		},
+		orderRepo,
+		accrualClient,
+		nil, // TODO balance — подключить после появления пакета balance
+		zl,
+	)
+	a.accrualPool = accrualPool
+
+	orderSvc := order.NewService(orderRepo, accrualPool)
 	orderHandler := order.NewHandel(orderSvc, zl)
 
 	mux := NewMux(ctx, tokenProvider, userHandler, orderHandler)
@@ -119,15 +140,21 @@ func (a *App) Run(ctx context.Context) error {
 		Без wg.Wait Run выходил бы сразу по ctx.Done(), а Start ещё крутил бы Shutdown в фоне.
 	*/
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		// Стартуем воркер
+		a.accrualPool.Run(ctx)
+	}()
 
 	go func() {
 		// done = wg.Done: Start вызовет его в defer, когда выйдет из функции (после Shutdown).
-		a.server.Start(ctx, wg.Done)
+		a.server.Start(ctx, func() { wg.Done() })
 	}()
 
 	<-ctx.Done() // сигнал из main: SIGINT / SIGTERM
-	wg.Wait()    // ждём конец Server.Start, только потом return в main
+	wg.Wait()    // ждём остановку HTTP и воркеров
 
 	return nil
 }

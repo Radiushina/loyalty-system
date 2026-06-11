@@ -30,7 +30,7 @@ func NewRepository(db *pgxpool.Pool) *OrdersRepo {
 	}
 }
 
-func (r *OrdersRepo) InsertOrder(ctx context.Context, userID uuid.UUID, orderNumber string) error {
+func (r *OrdersRepo) InsertOrder(ctx context.Context, userID uuid.UUID, orderNumber string) (uuid.UUID, error) {
 	query, args, err := r.builder.Insert(ordersTable).
 		Prepared(true).
 		Rows(goqu.Record{
@@ -39,24 +39,111 @@ func (r *OrdersRepo) InsertOrder(ctx context.Context, userID uuid.UUID, orderNum
 			"status":      New,
 			"uploaded_at": goqu.L("NOW()"),
 		}).
+		Returning(goqu.C("id")).
 		ToSQL()
 	if err != nil {
-		return fmt.Errorf("failed to build insert order query: %w", err)
+		return uuid.Nil, fmt.Errorf("failed to build insert order query: %w", err)
 	}
 
-	if _, err = r.db.Exec(ctx, query, args...); err != nil {
+	var orderID uuid.UUID
+	if err = r.db.QueryRow(ctx, query, args...).Scan(&orderID); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			existing, lookupErr := r.getOrderByNumber(ctx, orderNumber)
 			if lookupErr != nil {
-				return fmt.Errorf("failed to get existing order: %w", lookupErr)
+				return uuid.Nil, fmt.Errorf("failed to get existing order: %w", lookupErr)
 			}
 			if existing.UserId == userID {
-				return ErrOrderAlreadyUploadedByUser
+				return uuid.Nil, ErrOrderAlreadyUploadedByUser
 			}
-			return ErrOrderWasUploaded
+			return uuid.Nil, ErrOrderWasUploaded
 		}
-		return fmt.Errorf("failed to insert order: %w", err)
+		return uuid.Nil, fmt.Errorf("failed to insert order: %w", err)
+	}
+
+	return orderID, nil
+}
+
+func (r *OrdersRepo) GetOrderByID(ctx context.Context, orderID uuid.UUID) (Order, error) {
+	query, args, err := r.builder.From(ordersTable).
+		Select(
+			goqu.C("id"),
+			goqu.C("user_id"),
+			goqu.C("number"),
+			goqu.C("status"),
+			goqu.L("COALESCE(accrual, 0)").As("accrual"),
+			goqu.C("uploaded_at")).
+		Prepared(true).
+		Where(goqu.Ex{"id": orderID}).
+		ToSQL()
+	if err != nil {
+		return Order{}, fmt.Errorf("failed to build get order by id query: %w", err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return Order{}, fmt.Errorf("failed to query get order by id: %w", err)
+	}
+
+	order, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[Order])
+	if err != nil {
+		return Order{}, fmt.Errorf("failed to collect order by id: %w", err)
+	}
+
+	return order, nil
+}
+
+func (r *OrdersRepo) SelectPendingOrders(ctx context.Context, limit int) ([]Order, error) {
+	if limit <= 0 {
+		limit = 1
+	}
+
+	query, args, err := r.builder.From(ordersTable).
+		Select(
+			goqu.C("id"),
+			goqu.C("user_id"),
+			goqu.C("number"),
+			goqu.C("status"),
+			goqu.L("COALESCE(accrual, 0)").As("accrual"),
+			goqu.C("uploaded_at"),
+		).
+		Prepared(true).
+		Where(goqu.Ex{"status": []Status{New, Processing}}).
+		Order(goqu.C("uploaded_at").Asc()).
+		Limit(uint(limit)).
+		ToSQL()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build select pending orders query: %w", err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query pending orders: %w", err)
+	}
+
+	orders, err := pgx.CollectRows(rows, pgx.RowToStructByName[Order])
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect pending orders: %w", err)
+	}
+
+	return orders, nil
+}
+
+func (r *OrdersRepo) UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status Status, accrual int) error {
+	query, args, err := r.builder.Update(ordersTable).
+		Prepared(true).
+		Set(goqu.Record{
+			"status":  status,
+			"accrual": accrual,
+		}).
+		Where(goqu.Ex{"id": orderID}).
+		ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build update order accrual query: %w", err)
+	}
+
+	if _, err = r.db.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("failed to update order accrual: %w", err)
 	}
 
 	return nil

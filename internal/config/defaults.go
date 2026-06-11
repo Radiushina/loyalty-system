@@ -18,7 +18,9 @@ func DefaultConfig() Config {
 			TTL:    "24h",
 		},
 		Accrual: AccrualConfig{
-			Address: "http://localhost:8082",
+			Address:      "http://localhost:8082",
+			Workers:      3,
+			PollInterval: "10s",
 		},
 	}
 }
