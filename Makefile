@@ -6,7 +6,7 @@ DB_NAME ?= loyalty-system
 DATABASE_URL ?= postgres://developer:my_pass@localhost:5432/$(DB_NAME)?sslmode=disable
 MIGRATIONS_PATH := migrations/postgres
 
-.PHONY: docker-up docker-down
+.PHONY: docker-up docker-down mock
 docker-up:
 	docker compose up -d --build
 
@@ -32,3 +32,8 @@ migrate-up:
 migrate-down:
 	migrate -path $(MIGRATIONS_PATH) -database "$(DATABASE_URL)" down 1
 
+mock:
+	go tool mockery
+
+test-cover:
+	go test ./internal/... -cover

@@ -29,7 +29,6 @@ func NewHandler(service ServiceProvider, log *zap.Logger) *Handler {
 	}
 }
 
-// 400, 409, 500
 func (h *Handler) CreateUser(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
@@ -67,7 +66,6 @@ func (h *Handler) CreateUser(ctx context.Context) http.HandlerFunc {
 	}
 }
 
-// 400, 401, 500
 func (h *Handler) GetByLogin(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()

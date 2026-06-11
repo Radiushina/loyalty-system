@@ -13,7 +13,7 @@ type (
 
 	RepoProvider interface {
 		InsertOrder(ctx context.Context, userID uuid.UUID, orderNumber string) error
-		GetOrders(ctx context.Context, userID uuid.UUID) ([]Order, error)
+		SelectOrders(ctx context.Context, userID uuid.UUID) ([]Order, error)
 	}
 )
 
@@ -31,8 +31,8 @@ func (s *Service) CreateOrder(ctx context.Context, userID uuid.UUID, orderNumber
 	return s.repo.InsertOrder(ctx, userID, orderNumber)
 }
 
-func (s *Service) GetOrders(ctx context.Context, userID uuid.UUID) ([]Order, error) {
-	orders, err := s.repo.GetOrders(ctx, userID)
+func (s *Service) SelectOrders(ctx context.Context, userID uuid.UUID) ([]Order, error) {
+	orders, err := s.repo.SelectOrders(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

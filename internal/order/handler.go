@@ -21,7 +21,7 @@ type (
 
 	ServiceProvider interface {
 		CreateOrder(ctx context.Context, userID uuid.UUID, orderNumber string) error
-		GetOrders(ctx context.Context, userID uuid.UUID) ([]Order, error)
+		SelectOrders(ctx context.Context, userID uuid.UUID) ([]Order, error)
 	}
 )
 
@@ -82,7 +82,7 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 			return
 		}
 
-		orders, err := h.service.GetOrders(r.Context(), userID)
+		orders, err := h.service.SelectOrders(r.Context(), userID)
 		if err != nil {
 			h.log.Error("get orders", zap.Error(err))
 			writeError(w, http.StatusInternalServerError, "internal server error")

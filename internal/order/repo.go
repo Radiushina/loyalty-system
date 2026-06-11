@@ -69,7 +69,7 @@ func (r *OrdersRepo) getOrderByNumber(ctx context.Context, orderNumber string) (
 			goqu.C("user_id"),
 			goqu.C("number"),
 			goqu.C("status"),
-			goqu.C("accrual"),
+			goqu.L("COALESCE(accrual, 0)").As("accrual"),
 			goqu.C("uploaded_at")).
 		Prepared(true).
 		Where(goqu.Ex{"number": orderNumber}).
@@ -91,7 +91,7 @@ func (r *OrdersRepo) getOrderByNumber(ctx context.Context, orderNumber string) (
 	return order, nil
 }
 
-func (r *OrdersRepo) GetOrders(ctx context.Context, userID uuid.UUID) ([]Order, error) {
+func (r *OrdersRepo) SelectOrders(ctx context.Context, userID uuid.UUID) ([]Order, error) {
 	query, args, err := r.builder.From(ordersTable).
 		Select(
 			goqu.C("id"),

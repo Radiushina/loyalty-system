@@ -36,8 +36,7 @@ func (o *Order) toDTO() OrderDTO {
 		UploadedAt: o.UploadedAt,
 	}
 	if o.Status == "PROCESSED" {
-		accrual := o.Accrual
-		item.Accrual = &accrual
+		item.Accrual = &o.Accrual
 	}
 
 	return item
