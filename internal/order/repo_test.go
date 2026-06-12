@@ -109,10 +109,10 @@ func TestRepo_Insert(t *testing.T) {
 			orders, err := repo.SelectOrders(t.Context(), tc.userID)
 			require.NoError(t, err)
 			require.Len(t, orders, 1)
-			require.Equal(t, tc.userID, orders[0].UserId)
+			require.Equal(t, tc.userID, orders[0].UserID)
 			require.Equal(t, tc.orderNumber, orders[0].Number)
 			require.Equal(t, order.New, orders[0].Status)
-			require.Equal(t, float32(0), orders[0].Accrual)
+			require.Equal(t, float64(0), orders[0].Accrual)
 			require.NotEmpty(t, orders[0].Id)
 			require.False(t, orders[0].UploadedAt.IsZero())
 		})
@@ -183,7 +183,7 @@ func TestRepo_Select(t *testing.T) {
 
 			// 4. Сравниваем поля заказа с ожиданием.
 			for i, want := range tc.want {
-				require.Equal(t, tc.userID, got[i].UserId)
+				require.Equal(t, tc.userID, got[i].UserID)
 				require.Equal(t, want.Number, got[i].Number)
 				require.Equal(t, want.Status, got[i].Status)
 				require.Equal(t, want.Accrual, got[i].Accrual)

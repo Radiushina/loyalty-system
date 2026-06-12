@@ -41,7 +41,7 @@ func TestOrderInfo_JSONContract(t *testing.T) {
 	require.Equal(t, "79927398713", info.Order)
 	require.Equal(t, accrualclient.StatusProcessed, info.Status)
 	require.NotNil(t, info.Accrual)
-	require.Equal(t, float32(500), *info.Accrual)
+	require.Equal(t, float64(500), *info.Accrual)
 }
 
 func TestOrderInfo_JSONContractFloatAccrual(t *testing.T) {

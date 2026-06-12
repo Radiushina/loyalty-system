@@ -35,8 +35,8 @@ func TestAccrualClient_GetOrderInfo(t *testing.T) {
 			want: accrualclient.OrderInfo{
 				Order:  "79927398713",
 				Status: accrualclient.StatusProcessed,
-				Accrual: func() *float32 {
-					v := float32(500)
+				Accrual: func() *float64 {
+					v := float64(500)
 					return &v
 				}(),
 			},

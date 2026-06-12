@@ -19,7 +19,7 @@ import (
 )
 
 func newHandler(svc *order_mocks.ServiceProvider) *order.Handler {
-	return order.NewHandel(svc, zap.NewNop())
+	return order.NewHandler(svc, zap.NewNop())
 }
 
 func requestWithUser(t *testing.T, method, target, body string, userID uuid.UUID) *http.Request {

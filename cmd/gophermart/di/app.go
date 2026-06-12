@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Radiushina/loyalty-system/internal/auth"
+	"github.com/Radiushina/loyalty-system/internal/balance"
 	"github.com/Radiushina/loyalty-system/internal/config"
 	"github.com/Radiushina/loyalty-system/internal/logger"
 	"github.com/Radiushina/loyalty-system/internal/order"
@@ -89,6 +90,7 @@ func (a *App) initialize(ctx context.Context) error {
 	userHandler := user.NewHandler(userSvc, zl)
 
 	orderRepo := order.NewRepository(dbPool)
+	balanceRepo := balance.NewRepository(dbPool)
 
 	accrualClient := accrualclient.New(accrualclient.Config{Address: cfg.Accrual.Address})
 	pollInterval, err := cfg.Accrual.PollIntervalDuration()
@@ -109,9 +111,12 @@ func (a *App) initialize(ctx context.Context) error {
 	a.accrualPool = accrualPool
 
 	orderSvc := order.NewService(orderRepo, accrualPool)
-	orderHandler := order.NewHandel(orderSvc, zl)
+	orderHandler := order.NewHandler(orderSvc, zl)
 
-	mux := NewMux(ctx, tokenProvider, userHandler, orderHandler)
+	balanceSvc := balance.NewService(balanceRepo)
+	balanceHandler := balance.NewHandler(balanceSvc, zl)
+
+	mux := NewMux(ctx, tokenProvider, userHandler, orderHandler, balanceHandler)
 
 	httpHandler := logger.LoggingMiddleware(zl, mux)
 
@@ -159,7 +164,13 @@ func (a *App) Run(ctx context.Context) error {
 	return nil
 }
 
-func NewMux(ctx context.Context, jwt *auth.JWT, userHandler *user.Handler, orderHandler *order.Handler) http.Handler {
+func NewMux(
+	ctx context.Context,
+	jwt *auth.JWT,
+	userHandler *user.Handler,
+	orderHandler *order.Handler,
+	balanceHandler *balance.Handler,
+) http.Handler {
 	r := chi.NewRouter()
 
 	r.Post("/api/user/register", userHandler.CreateUser(ctx))
@@ -169,6 +180,11 @@ func NewMux(ctx context.Context, jwt *auth.JWT, userHandler *user.Handler, order
 		r.Use(user.NewAuthMiddleware(jwt))
 		r.Post("/api/user/orders", orderHandler.CreateOrder())
 		r.Get("/api/user/orders", orderHandler.GetOrders())
+	})
+	r.Group(func(r chi.Router) {
+		r.Post("/api/user/balance/withdraw", balanceHandler.WithdrawBalance())
+		r.Get("/api/user/balance", balanceHandler.GetBalance())
+		r.Get("/api/user/withdrawals", balanceHandler.GetWithdrawals())
 	})
 
 	return r

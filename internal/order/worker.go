@@ -29,7 +29,7 @@ type AccrualEnqueuer interface {
 type WorkerRepoProvider interface {
 	SelectPendingOrders(ctx context.Context, limit int) ([]Order, error)
 	GetOrderByID(ctx context.Context, orderID uuid.UUID) (Order, error)
-	UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status Status, accrual float32) error
+	UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status Status, accrual float64) error
 }
 
 // BalanceProvider — начисление баллов при PROCESSED (пакет balance подключится позже).
@@ -225,7 +225,7 @@ func (p *AccrualWorkerPool) applyAccrualUpdate(ctx context.Context, job OrderJob
 	p.log.Info("order accrual updated",
 		zap.String("order", job.Number),
 		zap.String("status", string(updated.Status)),
-		zap.Float32("accrual", updated.Accrual),
+		zap.Float64("accrual", updated.Accrual),
 	)
 
 	// PROCESSING — нужен повторный опрос; NEW после REGISTERED тоже может смениться.
@@ -272,7 +272,7 @@ func (p *AccrualWorkerPool) setRateLimit(retryAfter time.Duration) {
 func orderToJob(o Order) OrderJob {
 	return OrderJob{
 		ID:     o.Id,
-		UserID: o.UserId,
+		UserID: o.UserID,
 		Number: o.Number,
 		Status: o.Status,
 	}

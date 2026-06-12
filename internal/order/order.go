@@ -24,17 +24,17 @@ const (
 
 type Order struct {
 	Id         uuid.UUID `db:"id" json:"id"`
-	UserId     uuid.UUID `db:"user_id" json:"user_id"`
+	UserID     uuid.UUID `db:"user_id" json:"user_id"`
 	Number     string    `db:"number" json:"number"`
 	Status     Status    `db:"status" json:"status"`
-	Accrual    float32   `db:"accrual" json:"accrual"`
+	Accrual    float64   `db:"accrual" json:"accrual"`
 	UploadedAt time.Time `db:"uploaded_at" json:"uploaded_at"`
 }
 
 type OrderDTO struct {
 	Number     string    `json:"number"`
 	Status     Status    `json:"status"`
-	Accrual    *float32  `json:"accrual,omitempty"`
+	Accrual    *float64  `json:"accrual,omitempty"`
 	UploadedAt time.Time `json:"uploaded_at"`
 }
 

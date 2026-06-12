@@ -14,7 +14,7 @@ const (
 type OrderInfo struct {
 	Order   string   `json:"order"`
 	Status  Status   `json:"status"`
-	Accrual *float32 `json:"accrual,omitempty"`
+	Accrual *float64 `json:"accrual,omitempty"`
 }
 
 func (s Status) IsFinal() bool {

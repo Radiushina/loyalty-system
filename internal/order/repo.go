@@ -53,7 +53,7 @@ func (r *OrdersRepo) InsertOrder(ctx context.Context, userID uuid.UUID, orderNum
 			if lookupErr != nil {
 				return uuid.Nil, fmt.Errorf("failed to get existing order: %w", lookupErr)
 			}
-			if existing.UserId == userID {
+			if existing.UserID == userID {
 				return uuid.Nil, ErrOrderAlreadyUploadedByUser
 			}
 			return uuid.Nil, ErrOrderWasUploaded
@@ -129,7 +129,7 @@ func (r *OrdersRepo) SelectPendingOrders(ctx context.Context, limit int) ([]Orde
 	return orders, nil
 }
 
-func (r *OrdersRepo) UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status Status, accrual float32) error {
+func (r *OrdersRepo) UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status Status, accrual float64) error {
 	query, args, err := r.builder.Update(ordersTable).
 		Prepared(true).
 		Set(goqu.Record{

@@ -25,7 +25,7 @@ type (
 	}
 )
 
-func NewHandel(service ServiceProvider, log *zap.Logger) *Handler {
+func NewHandler(service ServiceProvider, log *zap.Logger) *Handler {
 	return &Handler{
 		service: service,
 		log:     log,
