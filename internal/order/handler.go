@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Radiushina/loyalty-system/internal/user"
+	"github.com/Radiushina/loyalty-system/pkg/luhn"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -57,7 +58,7 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 		err = h.service.CreateOrder(r.Context(), userID, number)
 		if err != nil {
 			switch {
-			case errors.Is(err, ErrInvalidOrderNumber):
+			case errors.Is(err, luhn.ErrInvalidOrderNumber):
 				writeError(w, http.StatusUnprocessableEntity, "invalid order number format")
 			case errors.Is(err, ErrOrderWasUploaded):
 				writeError(w, http.StatusConflict, "the order number has already been uploaded by another user")

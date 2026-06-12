@@ -12,6 +12,7 @@ import (
 	"github.com/Radiushina/loyalty-system/internal/order"
 	"github.com/Radiushina/loyalty-system/internal/order/order_mocks"
 	"github.com/Radiushina/loyalty-system/internal/user"
+	"github.com/Radiushina/loyalty-system/pkg/luhn"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -75,7 +76,7 @@ func TestHandler_CreateOrder(t *testing.T) {
 			prepare: func(svc *order_mocks.ServiceProvider) {
 				svc.EXPECT().
 					CreateOrder(mock.Anything, userID, "invalid").
-					Return(order.ErrInvalidOrderNumber)
+					Return(luhn.ErrInvalidOrderNumber)
 			},
 			wantStatus: http.StatusUnprocessableEntity,
 			wantMsg:    "invalid order number format",

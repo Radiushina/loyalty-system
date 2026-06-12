@@ -1,9 +1,15 @@
 package balance
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+)
+
+var (
+	ErrInsufficientFunds       = errors.New("insufficient funds")
+	ErrWithdrawalAlreadyExists = errors.New("withdrawal for this order already exists")
 )
 
 type UserBalance struct {

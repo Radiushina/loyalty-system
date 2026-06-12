@@ -5,6 +5,7 @@ import (
 
 	"github.com/Radiushina/loyalty-system/internal/order"
 	"github.com/Radiushina/loyalty-system/internal/order/order_mocks"
+	"github.com/Radiushina/loyalty-system/pkg/luhn"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -34,12 +35,12 @@ func TestService_CreateOrder(t *testing.T) {
 		{
 			name:        "Invalid order number — not digits",
 			orderNumber: "invalid",
-			wantErr:     order.ErrInvalidOrderNumber,
+			wantErr:     luhn.ErrInvalidOrderNumber,
 		},
 		{
 			name:        "Invalid order number — failed luhn check",
 			orderNumber: "123",
-			wantErr:     order.ErrInvalidOrderNumber,
+			wantErr:     luhn.ErrInvalidOrderNumber,
 		},
 	}
 

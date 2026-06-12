@@ -10,7 +10,6 @@ import (
 var (
 	ErrOrderWasUploaded           = errors.New("the order number has already been uploaded by another user")
 	ErrOrderAlreadyUploadedByUser = errors.New("the order number has already been uploaded by this user")
-	ErrInvalidOrderNumber         = errors.New("invalid order number format")
 )
 
 type Status string

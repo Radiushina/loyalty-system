@@ -3,9 +3,11 @@ package balance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/Radiushina/loyalty-system/internal/user"
+	"github.com/Radiushina/loyalty-system/pkg/luhn"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -34,7 +36,37 @@ func NewHandler(service ServiceProvider, log *zap.Logger) *Handler {
 // WithdrawBalance обрабатывает POST /api/user/balance/withdraw — списание баллов в счёт оплаты заказа.
 func (h *Handler) WithdrawBalance() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer func() { _ = r.Body.Close() }()
 
+		userID, ok := user.UserIDFromContext(r.Context())
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+
+		var opt WithdrawOpt
+		if err := json.NewDecoder(r.Body).Decode(&opt); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request format")
+			return
+		}
+
+		err := h.service.WithdrawBalance(r.Context(), userID, opt)
+		if err != nil {
+			switch {
+			case errors.Is(err, luhn.ErrInvalidOrderNumber):
+				writeError(w, http.StatusUnprocessableEntity, "invalid order number format")
+			case errors.Is(err, ErrInsufficientFunds):
+				writeError(w, http.StatusPaymentRequired, "not enough funds")
+			case errors.Is(err, ErrWithdrawalAlreadyExists):
+				writeError(w, http.StatusConflict, "withdrawal for this order already exists")
+			default:
+				h.log.Error("withdraw balance", zap.Error(err))
+				writeError(w, http.StatusInternalServerError, "internal server error")
+			}
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }
 

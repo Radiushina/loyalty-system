@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 
+	"github.com/Radiushina/loyalty-system/pkg/luhn"
 	"github.com/google/uuid"
 )
 
@@ -26,8 +27,8 @@ func NewService(repo RepoProvider, accrual AccrualEnqueuer) *Service {
 }
 
 func (s *Service) CreateOrder(ctx context.Context, userID uuid.UUID, orderNumber string) error {
-	if !luhnValid(orderNumber) {
-		return ErrInvalidOrderNumber
+	if !luhn.Valid(orderNumber) {
+		return luhn.ErrInvalidOrderNumber
 	}
 
 	orderID, err := s.repo.InsertOrder(ctx, userID, orderNumber)
@@ -54,26 +55,4 @@ func (s *Service) SelectOrders(ctx context.Context, userID uuid.UUID) ([]Order, 
 	}
 
 	return orders, nil
-}
-
-func luhnValid(number string) bool {
-	sum := 0
-	parity := len(number) % 2
-
-	for i := 0; i < len(number); i++ {
-		if number[i] < '0' || number[i] > '9' {
-			return false
-		}
-
-		d := int(number[i] - '0')
-		if i%2 == parity {
-			d *= 2
-			if d > 9 {
-				d -= 9
-			}
-		}
-		sum += d
-	}
-
-	return sum%10 == 0
 }

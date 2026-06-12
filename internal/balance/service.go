@@ -3,6 +3,7 @@ package balance
 import (
 	"context"
 
+	"github.com/Radiushina/loyalty-system/pkg/luhn"
 	"github.com/google/uuid"
 )
 
@@ -27,8 +28,11 @@ func NewService(repo RepoProvider) *Service {
 
 // WithdrawBalance списывает баллы с накопительного счёта в счёт оплаты заказа.
 func (s *Service) WithdrawBalance(ctx context.Context, userID uuid.UUID, opt WithdrawOpt) error {
+	if !luhn.Valid(opt.Order) {
+		return luhn.ErrInvalidOrderNumber
+	}
 
-	return nil
+	return s.repo.WithdrawBalance(ctx, userID, opt)
 }
 
 // SelectBalance возвращает текущий баланс и общую сумму списаний пользователя.
