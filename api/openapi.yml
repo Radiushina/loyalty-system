@@ -13,8 +13,6 @@ tags:
     description: Методы взаимодействия с заказами
   - name: Balance
     description: Методы взаимодействия с балансом
-  - name: Withdrawals
-    description: Вывод средств
 
 paths:
   /api/user/register:
@@ -222,7 +220,7 @@ paths:
         - BearerAuth: [ ]
       description: Данные о выводе отсортированы по времени вывода от самых новых к самым старым. Формат даты — RFC3339.
       tags:
-        - Withdrawals
+        - Balance
       responses:
         200:
           description: 'Успешная обработка запроса'
