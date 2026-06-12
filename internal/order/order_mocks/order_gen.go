@@ -568,7 +568,7 @@ func (_c *WorkerRepoProvider_SelectPendingOrders_Call) RunAndReturn(run func(ctx
 }
 
 // UpdateOrderAccrual provides a mock function for the type WorkerRepoProvider
-func (_mock *WorkerRepoProvider) UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status order.Status, accrual int) error {
+func (_mock *WorkerRepoProvider) UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status order.Status, accrual float32) error {
 	ret := _mock.Called(ctx, orderID, status, accrual)
 
 	if len(ret) == 0 {
@@ -576,7 +576,7 @@ func (_mock *WorkerRepoProvider) UpdateOrderAccrual(ctx context.Context, orderID
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, order.Status, int) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, order.Status, float32) error); ok {
 		r0 = returnFunc(ctx, orderID, status, accrual)
 	} else {
 		r0 = ret.Error(0)
@@ -593,12 +593,12 @@ type WorkerRepoProvider_UpdateOrderAccrual_Call struct {
 //   - ctx context.Context
 //   - orderID uuid.UUID
 //   - status order.Status
-//   - accrual int
+//   - accrual float32
 func (_e *WorkerRepoProvider_Expecter) UpdateOrderAccrual(ctx interface{}, orderID interface{}, status interface{}, accrual interface{}) *WorkerRepoProvider_UpdateOrderAccrual_Call {
 	return &WorkerRepoProvider_UpdateOrderAccrual_Call{Call: _e.mock.On("UpdateOrderAccrual", ctx, orderID, status, accrual)}
 }
 
-func (_c *WorkerRepoProvider_UpdateOrderAccrual_Call) Run(run func(ctx context.Context, orderID uuid.UUID, status order.Status, accrual int)) *WorkerRepoProvider_UpdateOrderAccrual_Call {
+func (_c *WorkerRepoProvider_UpdateOrderAccrual_Call) Run(run func(ctx context.Context, orderID uuid.UUID, status order.Status, accrual float32)) *WorkerRepoProvider_UpdateOrderAccrual_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -612,9 +612,9 @@ func (_c *WorkerRepoProvider_UpdateOrderAccrual_Call) Run(run func(ctx context.C
 		if args[2] != nil {
 			arg2 = args[2].(order.Status)
 		}
-		var arg3 int
+		var arg3 float32
 		if args[3] != nil {
-			arg3 = args[3].(int)
+			arg3 = args[3].(float32)
 		}
 		run(
 			arg0,
@@ -631,7 +631,7 @@ func (_c *WorkerRepoProvider_UpdateOrderAccrual_Call) Return(err error) *WorkerR
 	return _c
 }
 
-func (_c *WorkerRepoProvider_UpdateOrderAccrual_Call) RunAndReturn(run func(ctx context.Context, orderID uuid.UUID, status order.Status, accrual int) error) *WorkerRepoProvider_UpdateOrderAccrual_Call {
+func (_c *WorkerRepoProvider_UpdateOrderAccrual_Call) RunAndReturn(run func(ctx context.Context, orderID uuid.UUID, status order.Status, accrual float32) error) *WorkerRepoProvider_UpdateOrderAccrual_Call {
 	_c.Call.Return(run)
 	return _c
 }

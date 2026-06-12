@@ -129,7 +129,7 @@ func (r *OrdersRepo) SelectPendingOrders(ctx context.Context, limit int) ([]Orde
 	return orders, nil
 }
 
-func (r *OrdersRepo) UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status Status, accrual int) error {
+func (r *OrdersRepo) UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status Status, accrual float32) error {
 	query, args, err := r.builder.Update(ordersTable).
 		Prepared(true).
 		Set(goqu.Record{

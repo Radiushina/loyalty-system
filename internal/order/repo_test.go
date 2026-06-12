@@ -112,7 +112,7 @@ func TestRepo_Insert(t *testing.T) {
 			require.Equal(t, tc.userID, orders[0].UserId)
 			require.Equal(t, tc.orderNumber, orders[0].Number)
 			require.Equal(t, order.New, orders[0].Status)
-			require.Equal(t, 0, orders[0].Accrual)
+			require.Equal(t, float32(0), orders[0].Accrual)
 			require.NotEmpty(t, orders[0].Id)
 			require.False(t, orders[0].UploadedAt.IsZero())
 		})

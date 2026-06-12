@@ -42,7 +42,7 @@ func TestMapAccrualStatus(t *testing.T) {
 func TestApplyAccrualInfo(t *testing.T) {
 	t.Parallel()
 
-	accrual := 500
+	accrual := float32(500)
 	o := &order.Order{Status: order.New}
 
 	err := order.ApplyAccrualInfo(o, accrualclient.OrderInfo{
@@ -52,7 +52,7 @@ func TestApplyAccrualInfo(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, order.Processed, o.Status)
-	require.Equal(t, 500, o.Accrual)
+	require.Equal(t, float32(500), o.Accrual)
 }
 
 func TestPollOrder(t *testing.T) {

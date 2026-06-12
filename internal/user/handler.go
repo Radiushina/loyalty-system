@@ -60,7 +60,7 @@ func (h *Handler) CreateUser(ctx context.Context) http.HandlerFunc {
 			return
 		}
 
-		if err := writeJSON(w, http.StatusOK, user); err != nil {
+		if err := writeAuthSession(w, user); err != nil {
 			h.log.Error("encode response", zap.Error(err))
 		}
 	}
@@ -97,10 +97,15 @@ func (h *Handler) GetByLogin(ctx context.Context) http.HandlerFunc {
 			return
 		}
 
-		if err := writeJSON(w, http.StatusOK, user); err != nil {
+		if err := writeAuthSession(w, user); err != nil {
 			h.log.Error("encode response", zap.Error(err))
 		}
 	}
+}
+
+func writeAuthSession(w http.ResponseWriter, session AuthSession) error {
+	w.Header().Set("Authorization", "Bearer "+session.Token)
+	return writeJSON(w, http.StatusOK, session)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) error {

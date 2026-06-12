@@ -35,16 +35,13 @@ paths:
       responses:
         200:
           description: 'Успешная регистрация'
+          headers:
+            Authorization:
+              $ref: '#/components/headers/Authorization'
           content:
             application/json:
               schema:
-                type: object
-                required: [ user, token ]
-                properties:
-                  user:
-                    $ref: './common/user.yml#/User'
-                  token:
-                    type: string
+                $ref: '#/components/schemas/AuthSession'
         400:
           $ref: '#/components/responses/400'
         409:
@@ -74,16 +71,13 @@ paths:
       responses:
         200:
           description: 'Успешная аутентификация'
+          headers:
+            Authorization:
+              $ref: '#/components/headers/Authorization'
           content:
             application/json:
               schema:
-                type: object
-                required: [ user, token ]
-                properties:
-                  user:
-                    $ref: './common/user.yml#/User'
-                  token:
-                    type: string
+                $ref: '#/components/schemas/AuthSession'
         400:
           $ref: '#/components/responses/400'
         401:
@@ -171,7 +165,17 @@ components:
       bearerFormat: JWT
       description: |
         JWT-токен, полученный при регистрации (`POST /api/user/register`) или входе (`POST /api/user/login`).
-        Передаётся в заголовке `Authorization` в формате `Bearer <token>`.
+        В ответе этих методов токен возвращается в заголовке `Authorization` (`Bearer <token>`)
+        и дублируется в теле JSON (поле `token`).
+        В последующих запросах передаётся в заголовке `Authorization`.
+  headers:
+    Authorization:
+      description: |
+        JWT-токен сессии в формате `Bearer <token>`.
+        Возвращается при успешной регистрации и входе.
+      schema:
+        type: string
+      example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
   responses:
     '400':
       description: 'Неверный формат запроса'
@@ -250,6 +254,15 @@ components:
             $ref: '#/components/schemas/UnsuccessfulResponse'
           example: { "msg": "internal server error" }
   schemas:
+    AuthSession:
+      type: object
+      required: [ user, token ]
+      properties:
+        user:
+          $ref: './common/user.yml#/User'
+        token:
+          type: string
+          description: JWT-токен (дублирует значение из заголовка Authorization)
     UnsuccessfulResponse:
       type: object
       required: [ msg ]

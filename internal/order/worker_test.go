@@ -64,7 +64,7 @@ func TestAccrualWorkerPool_ProcessesEnqueuedOrder(t *testing.T) {
 			Status: order.New,
 		}, nil)
 	repo.EXPECT().
-		UpdateOrderAccrual(mock.Anything, orderID, order.Processed, 500).
+		UpdateOrderAccrual(mock.Anything, orderID, order.Processed, float32(500)).
 		Return(nil)
 
 	done := make(chan struct{})

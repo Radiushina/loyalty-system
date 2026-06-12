@@ -37,3 +37,29 @@ mock:
 
 test-cover:
 	go test ./internal/... -cover
+
+# Автотесты Яндекса (go-autotests). Бинарники: .tools/gophermarttest/, .tools/random/, cmd/accrual/
+GOPHERMART_BIN        := cmd/gophermart/gophermart
+ACCRUAL_BIN           := cmd/accrual/accrual_darwin_arm64
+GOPHERMART_TEST_BIN   := .tools/gophermarttest/gophermarttest-darwin-arm64
+RANDOM_BIN            := .tools/random/random-darwin-arm64
+GOPHERMART_HOST       ?= localhost
+GOPHERMART_PORT       ?= 8080
+
+.PHONY: build-gophermart gophermart-test
+build-gophermart:
+	cd cmd/gophermart && go build -buildvcs=false -o gophermart
+
+gophermart-test: build-gophermart
+	docker compose stop gophermart
+	$(GOPHERMART_TEST_BIN) \
+		-test.v \
+		-test.run=^TestGophermart$$ \
+		-gophermart-binary-path=$(GOPHERMART_BIN) \
+		-gophermart-host=$(GOPHERMART_HOST) \
+		-gophermart-port=$(GOPHERMART_PORT) \
+		-gophermart-database-uri="$(DATABASE_URL)" \
+		-accrual-binary-path=$(ACCRUAL_BIN) \
+		-accrual-host=$(GOPHERMART_HOST) \
+		-accrual-port=$$($(RANDOM_BIN) unused-port) \
+		-accrual-database-uri="$(DATABASE_URL)"

@@ -12,9 +12,9 @@ const (
 
 // OrderInfo — ответ GET /api/orders/{number} при коде 200.
 type OrderInfo struct {
-	Order   string `json:"order"`
-	Status  Status `json:"status"`
-	Accrual *int   `json:"accrual,omitempty"`
+	Order   string   `json:"order"`
+	Status  Status   `json:"status"`
+	Accrual *float32 `json:"accrual,omitempty"`
 }
 
 func (s Status) IsFinal() bool {

@@ -27,14 +27,14 @@ type Order struct {
 	UserId     uuid.UUID `db:"user_id" json:"user_id"`
 	Number     string    `db:"number" json:"number"`
 	Status     Status    `db:"status" json:"status"`
-	Accrual    int       `db:"accrual" json:"accrual"`
+	Accrual    float32   `db:"accrual" json:"accrual"`
 	UploadedAt time.Time `db:"uploaded_at" json:"uploaded_at"`
 }
 
 type OrderDTO struct {
 	Number     string    `json:"number"`
 	Status     Status    `json:"status"`
-	Accrual    *int      `json:"accrual,omitempty"`
+	Accrual    *float32  `json:"accrual,omitempty"`
 	UploadedAt time.Time `json:"uploaded_at"`
 }
 
