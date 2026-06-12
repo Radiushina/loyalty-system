@@ -16,7 +16,7 @@ Order:
         - INVALID
         - PROCESSED
     accrual:
-      type: integer
+      type: float
       description: Рассчитанные баллы к начислению
       example: 500
     uploaded_at:

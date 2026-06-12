@@ -1,0 +1,18 @@
+#file: noinspection YAMLSchemaValidation
+Withdraw:
+  type: object
+  required: [order, sum, processed_at]
+  properties:
+    order:
+      type: string
+      description: Номер заказа
+      example: "12345678903"
+    sum:
+      type: float
+      description: Сумма баллов лояльности
+      example: 500
+    processed_at:
+      type: string
+      format: date-time
+      description: Время списания
+      example: "2020-12-09T16:09:53+03:00"

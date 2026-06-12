@@ -11,6 +11,10 @@ tags:
     description: Методы авторизации
   - name: Orders
     description: Методы взаимодействия с заказами
+  - name: Balance
+    description: Методы взаимодействия с балансом
+  - name: Withdrawals
+    description: Вывод средств
 
 paths:
   /api/user/register:
@@ -46,8 +50,8 @@ paths:
           $ref: '#/components/responses/400'
         409:
           $ref: '#/components/responses/409'
-        default:
-          $ref: '#/components/responses/default'
+        500:
+          $ref: '#/components/responses/500'
 
   /api/user/login:
     post:
@@ -81,9 +85,9 @@ paths:
         400:
           $ref: '#/components/responses/400'
         401:
-          $ref: '#/components/responses/401'
-        default:
-          $ref: '#/components/responses/default'
+          $ref: '#/components/responses/invalid_login_pass'
+        500:
+          $ref: '#/components/responses/500'
 
   /api/user/orders:
     get:
@@ -118,7 +122,7 @@ paths:
         204:
           description: 'Нет данных для ответа'
         401:
-          $ref: '#/components/responses/unauthorized'
+          $ref: '#/components/responses/401'
         500:
           $ref: '#/components/responses/500'
 
@@ -147,7 +151,7 @@ paths:
         400:
           $ref: '#/components/responses/400'
         401:
-          $ref: '#/components/responses/unauthorized'
+          $ref: '#/components/responses/401'
         409:
           $ref: '#/components/responses/order_was_uploaded'
         422:
@@ -155,6 +159,95 @@ paths:
         500:
           $ref: '#/components/responses/500'
 
+  /api/user/balance:
+    get:
+      summary: Получение текущего баланса пользователя
+      security:
+        - BearerAuth: [ ]
+      description: Данные о текущей сумме баллов лояльности, а также сумме использованных за весь период регистрации баллов.
+      tags:
+        - Balance
+      responses:
+        200:
+          description: 'Успешная обработка запроса'
+          content:
+            application/json:
+              schema:
+                $ref: './common/balance.yml#/Balance'
+        401:
+          $ref: '#/components/responses/401'
+        500:
+          $ref: '#/components/responses/500'
+
+  /api/user/balance/withdraw:
+    post:
+      summary: Запрос на списание средств
+      security:
+        - BearerAuth: [ ]
+      description: Номер заказа представляет собой гипотетический номер нового заказа пользователя, в счёт оплаты которого списываются баллы.
+      tags:
+        - Balance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ order, sum ]
+              properties:
+                order:
+                  type: string
+                  description: Номер заказа
+                  example: "2377225624"
+                sum:
+                  type: float
+                  description: Cумма баллов к списанию в счёт оплаты
+                  example: 751
+      responses:
+        200:
+          description: 'Успешная обработка запроса'
+        401:
+          $ref: '#/components/responses/401'
+        402:
+          $ref: '#/components/responses/402'
+        422:
+          $ref: '#/components/responses/422'
+        500:
+          $ref: '#/components/responses/500'
+
+  /api/user/withdrawals:
+    get:
+      summary: Получение информации о выводе средств
+      security:
+        - BearerAuth: [ ]
+      description: Данные о выводе отсортированы по времени вывода от самых новых к самым старым. Формат даты — RFC3339.
+      tags:
+        - Withdrawals
+      responses:
+        200:
+          description: 'Успешная обработка запроса'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './common/withdraw.yml#/Withdraw'
+              example:
+                - order: "9278923470"
+                  sum: 500
+                  processed_at: "2020-12-10T15:15:45+03:00"
+                - order: "12345678903"
+                  sum: 300.5
+                  processed_at: "2020-12-10T15:12:01+03:00"
+                - order: "346436439"
+                  sum: 200
+                  processed_at: "2020-12-09T16:09:53+03:00"
+        204:
+          description: 'Нет данных для ответа'
+        401:
+          $ref: '#/components/responses/401'
+        500:
+          $ref: '#/components/responses/500'
 
 
 components:
@@ -191,19 +284,19 @@ components:
               summary: Validate Example
               value: { "msg": "validate" }
     '401':
-      description: 'Неверная пара логин/пароль'
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/UnsuccessfulResponse'
-          example: { "msg": "invalid login/password pair" }
-    'unauthorized':
-      description: 'Пользователь не аутентифицирован'
+      description: 'Пользователь не авторизован'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/UnsuccessfulResponse'
           example: { "msg": "user unauthorized" }
+    '402':
+      description: 'На счету недостаточно средств'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "not enough funds" }
     '403':
       description: 'Ошибка проверки прав доступа'
       content:
@@ -225,13 +318,6 @@ components:
           schema:
             $ref: '#/components/schemas/UnsuccessfulResponse'
           example: { "msg": "login is already taken" }
-    'order_was_uploaded':
-      description: 'Номер заказа уже был загружен другим пользователем'
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/UnsuccessfulResponse'
-          example: { "msg": "the order number has already been uploaded by another user." }
     '422':
       description: 'Неверный формат номера заказа'
       content:
@@ -246,13 +332,20 @@ components:
           schema:
             $ref: '#/components/schemas/UnsuccessfulResponse'
           example: { "msg": "internal server error" }
-    default:
-      description: 'Внутренняя ошибка сервиса'
+    'invalid_login_pass':
+      description: 'Неверная пара логин/пароль'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/UnsuccessfulResponse'
-          example: { "msg": "internal server error" }
+          example: { "msg": "invalid login/password pair" }
+    'order_was_uploaded':
+      description: 'Номер заказа уже был загружен другим пользователем'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "the order number has already been uploaded by another user." }
   schemas:
     AuthSession:
       type: object
