@@ -13,7 +13,9 @@ import (
 	"github.com/Radiushina/loyalty-system/internal/logger"
 	"github.com/Radiushina/loyalty-system/internal/order"
 	"github.com/Radiushina/loyalty-system/internal/user"
+	"github.com/Radiushina/loyalty-system/migrations"
 	"github.com/Radiushina/loyalty-system/pkg/accrualclient"
+	"github.com/Radiushina/loyalty-system/pkg/pgmigrator"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -65,8 +67,13 @@ func (a *App) initialize(ctx context.Context) error {
 	}
 	a.logger = zl
 
+	dsn := cfg.Storage.DatabaseDSN()
+	if err := pgmigrator.MigrateFromEmbeddedFS(migrations.Postgres, "postgres", dsn); err != nil {
+		return fmt.Errorf("run migrations: %w", err)
+	}
+
 	// 3. Инициализируем БД. Не defer Close здесь — пул живёт до gracefulShutdown в NewApp.
-	dbPool, err := pgxpool.New(ctx, cfg.Storage.DatabaseDSN())
+	dbPool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return fmt.Errorf("connect postgres: %w", err)
 	}
@@ -75,7 +82,7 @@ func (a *App) initialize(ctx context.Context) error {
 		return fmt.Errorf("ping postgres: %w", err)
 	}
 	a.db = dbPool
-	zl.Info("postgres connected", zap.String("database_uri", cfg.Storage.DatabaseDSN()))
+	zl.Info("postgres connected", zap.String("database_uri", dsn))
 	zl.Info("accrual system configured", zap.String("address", cfg.Accrual.Address))
 
 	// 4. Инициализируем repo, service, handler
