@@ -664,7 +664,7 @@ func (_m *BalanceProvider) EXPECT() *BalanceProvider_Expecter {
 }
 
 // CreditAccrual provides a mock function for the type BalanceProvider
-func (_mock *BalanceProvider) CreditAccrual(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, amount int) error {
+func (_mock *BalanceProvider) CreditAccrual(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, amount float64) error {
 	ret := _mock.Called(ctx, userID, orderID, amount)
 
 	if len(ret) == 0 {
@@ -672,7 +672,7 @@ func (_mock *BalanceProvider) CreditAccrual(ctx context.Context, userID uuid.UUI
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, int) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, float64) error); ok {
 		r0 = returnFunc(ctx, userID, orderID, amount)
 	} else {
 		r0 = ret.Error(0)
@@ -689,12 +689,12 @@ type BalanceProvider_CreditAccrual_Call struct {
 //   - ctx context.Context
 //   - userID uuid.UUID
 //   - orderID uuid.UUID
-//   - amount int
+//   - amount float64
 func (_e *BalanceProvider_Expecter) CreditAccrual(ctx interface{}, userID interface{}, orderID interface{}, amount interface{}) *BalanceProvider_CreditAccrual_Call {
 	return &BalanceProvider_CreditAccrual_Call{Call: _e.mock.On("CreditAccrual", ctx, userID, orderID, amount)}
 }
 
-func (_c *BalanceProvider_CreditAccrual_Call) Run(run func(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, amount int)) *BalanceProvider_CreditAccrual_Call {
+func (_c *BalanceProvider_CreditAccrual_Call) Run(run func(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, amount float64)) *BalanceProvider_CreditAccrual_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -708,9 +708,9 @@ func (_c *BalanceProvider_CreditAccrual_Call) Run(run func(ctx context.Context, 
 		if args[2] != nil {
 			arg2 = args[2].(uuid.UUID)
 		}
-		var arg3 int
+		var arg3 float64
 		if args[3] != nil {
-			arg3 = args[3].(int)
+			arg3 = args[3].(float64)
 		}
 		run(
 			arg0,
@@ -727,7 +727,7 @@ func (_c *BalanceProvider_CreditAccrual_Call) Return(err error) *BalanceProvider
 	return _c
 }
 
-func (_c *BalanceProvider_CreditAccrual_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, amount int) error) *BalanceProvider_CreditAccrual_Call {
+func (_c *BalanceProvider_CreditAccrual_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, amount float64) error) *BalanceProvider_CreditAccrual_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -263,6 +263,75 @@ func (_m *RepoProvider) EXPECT() *RepoProvider_Expecter {
 	return &RepoProvider_Expecter{mock: &_m.Mock}
 }
 
+// CreditAccrual provides a mock function for the type RepoProvider
+func (_mock *RepoProvider) CreditAccrual(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, amount float64) error {
+	ret := _mock.Called(ctx, userID, orderID, amount)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreditAccrual")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, float64) error); ok {
+		r0 = returnFunc(ctx, userID, orderID, amount)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// RepoProvider_CreditAccrual_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreditAccrual'
+type RepoProvider_CreditAccrual_Call struct {
+	*mock.Call
+}
+
+// CreditAccrual is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - orderID uuid.UUID
+//   - amount float64
+func (_e *RepoProvider_Expecter) CreditAccrual(ctx interface{}, userID interface{}, orderID interface{}, amount interface{}) *RepoProvider_CreditAccrual_Call {
+	return &RepoProvider_CreditAccrual_Call{Call: _e.mock.On("CreditAccrual", ctx, userID, orderID, amount)}
+}
+
+func (_c *RepoProvider_CreditAccrual_Call) Run(run func(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, amount float64)) *RepoProvider_CreditAccrual_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 float64
+		if args[3] != nil {
+			arg3 = args[3].(float64)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *RepoProvider_CreditAccrual_Call) Return(err error) *RepoProvider_CreditAccrual_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *RepoProvider_CreditAccrual_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, amount float64) error) *RepoProvider_CreditAccrual_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SelectBalance provides a mock function for the type RepoProvider
 func (_mock *RepoProvider) SelectBalance(ctx context.Context, userID uuid.UUID) (balance.UserBalance, error) {
 	ret := _mock.Called(ctx, userID)

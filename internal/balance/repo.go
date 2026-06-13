@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	balanceTable     = goqu.T("user_balance")
-	withdrawalsTable = goqu.T("withdrawals")
+	balanceTable         = goqu.T("user_balance")
+	withdrawalsTable     = goqu.T("withdrawals")
+	balanceAccrualsTable = goqu.T("balance_accruals")
 )
 
 type Repo struct {
@@ -83,6 +84,69 @@ func (r *Repo) WithdrawBalance(ctx context.Context, userID uuid.UUID, opt Withdr
 			return ErrWithdrawalAlreadyExists
 		}
 		return fmt.Errorf("failed to insert withdrawal: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// CreditAccrual идемпотентно начисляет баллы за заказ: повторный вызов с тем же orderID не меняет баланс.
+func (r *Repo) CreditAccrual(ctx context.Context, userID, orderID uuid.UUID, amount float64) error {
+	if amount <= 0 {
+		return nil
+	}
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	insertQuery, insertArgs, err := r.builder.Insert(balanceAccrualsTable).
+		Prepared(true).
+		Rows(goqu.Record{
+			"order_id":    orderID,
+			"user_id":     userID,
+			"amount":      amount,
+			"credited_at": goqu.L("NOW()"),
+		}).
+		ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build insert balance accrual query: %w", err)
+	}
+
+	tag, err := tx.Exec(ctx, insertQuery, insertArgs...)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return nil
+		}
+		return fmt.Errorf("failed to insert balance accrual: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return nil
+	}
+
+	upsertQuery, upsertArgs, err := r.builder.Insert(balanceTable).
+		Prepared(true).
+		Rows(goqu.Record{
+			"user_id":   userID,
+			"current":   amount,
+			"withdrawn": 0,
+		}).
+		OnConflict(goqu.DoUpdate("user_id", goqu.Record{
+			"current": goqu.L("user_balance.current + ?", amount),
+		})).
+		ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build upsert user balance query: %w", err)
+	}
+
+	if _, err = tx.Exec(ctx, upsertQuery, upsertArgs...); err != nil {
+		return fmt.Errorf("failed to upsert user balance: %w", err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {

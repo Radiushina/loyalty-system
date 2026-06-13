@@ -32,9 +32,9 @@ type WorkerRepoProvider interface {
 	UpdateOrderAccrual(ctx context.Context, orderID uuid.UUID, status Status, accrual float64) error
 }
 
-// BalanceProvider — начисление баллов при PROCESSED (пакет balance подключится позже).
+// BalanceProvider — начисление баллов при PROCESSED.
 type BalanceProvider interface {
-	CreditAccrual(ctx context.Context, userID, orderID uuid.UUID, amount int) error
+	CreditAccrual(ctx context.Context, userID, orderID uuid.UUID, amount float64) error
 }
 
 // WorkerPoolConfig — настройки пула воркеров.
@@ -213,11 +213,8 @@ func (p *AccrualWorkerPool) applyAccrualUpdate(ctx context.Context, job OrderJob
 		return err
 	}
 
-	if p.balance != nil &&
-		updated.Status == Processed &&
-		current.Status != Processed &&
-		updated.Accrual > 0 {
-		if err := p.balance.CreditAccrual(ctx, job.UserID, job.ID, int(updated.Accrual)); err != nil {
+	if p.balance != nil && updated.Status == Processed && updated.Accrual > 0 {
+		if err := p.balance.CreditAccrual(ctx, job.UserID, job.ID, updated.Accrual); err != nil {
 			return err
 		}
 	}

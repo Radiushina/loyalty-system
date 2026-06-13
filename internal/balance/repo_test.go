@@ -37,6 +37,96 @@ func seedBalance(t *testing.T, pool *pgxpool.Pool, userID uuid.UUID, current, wi
 	require.NoError(t, err)
 }
 
+func seedOrder(t *testing.T, pool *pgxpool.Pool, orderID, userID uuid.UUID, number string) {
+	t.Helper()
+
+	_, err := pool.Exec(
+		t.Context(),
+		`INSERT INTO orders (id, user_id, number, status, accrual, uploaded_at)
+		 VALUES ($1, $2, $3, 'PROCESSED', 0, NOW())`,
+		orderID,
+		userID,
+		number,
+	)
+	require.NoError(t, err)
+}
+
+func TestRepo_CreditAccrual(t *testing.T) {
+	t.Parallel()
+
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	orderID := uuid.MustParse("00000000-0000-0000-0000-000000000010")
+
+	tests := []struct {
+		name    string
+		amount  float64
+		prepare func(t *testing.T, pool *pgxpool.Pool, repo *balance.Repo)
+		want    balance.UserBalance
+	}{
+		{
+			name:   "Creates balance on first accrual",
+			amount: 729.98,
+			prepare: func(t *testing.T, pool *pgxpool.Pool, _ *balance.Repo) {
+				t.Helper()
+				seedUserWithID(t, pool, userID)
+				seedOrder(t, pool, orderID, userID, "79927398713")
+			},
+			want: balance.UserBalance{
+				UserID:    userID,
+				Current:   729.98,
+				Withdrawn: 0,
+			},
+		},
+		{
+			name:   "Adds to existing balance",
+			amount: 500,
+			prepare: func(t *testing.T, pool *pgxpool.Pool, repo *balance.Repo) {
+				t.Helper()
+				seedUserWithID(t, pool, userID)
+				seedOrder(t, pool, orderID, userID, "79927398713")
+				seedBalance(t, pool, userID, 100, 0)
+			},
+			want: balance.UserBalance{
+				UserID:    userID,
+				Current:   600,
+				Withdrawn: 0,
+			},
+		},
+		{
+			name:   "Second call with same order is idempotent",
+			amount: 500,
+			prepare: func(t *testing.T, pool *pgxpool.Pool, repo *balance.Repo) {
+				t.Helper()
+				seedUserWithID(t, pool, userID)
+				seedOrder(t, pool, orderID, userID, "79927398713")
+				require.NoError(t, repo.CreditAccrual(t.Context(), userID, orderID, 500))
+			},
+			want: balance.UserBalance{
+				UserID:    userID,
+				Current:   500,
+				Withdrawn: 0,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			pool, _, _ := postgres.New(t)
+			repo := balance.NewRepository(pool)
+
+			tc.prepare(t, pool, repo)
+
+			require.NoError(t, repo.CreditAccrual(t.Context(), userID, orderID, tc.amount))
+
+			got, err := repo.SelectBalance(t.Context(), userID)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
 func TestRepo_SelectBalance(t *testing.T) {
 	t.Parallel()
 

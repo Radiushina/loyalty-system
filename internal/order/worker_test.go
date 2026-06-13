@@ -71,8 +71,8 @@ func TestAccrualWorkerPool_ProcessesEnqueuedOrder(t *testing.T) {
 
 	balance := order_mocks.NewBalanceProvider(t)
 	balance.EXPECT().
-		CreditAccrual(mock.Anything, userID, orderID, 500).
-		Run(func(context.Context, uuid.UUID, uuid.UUID, int) { close(done) }).
+		CreditAccrual(mock.Anything, userID, orderID, float64(500)).
+		Run(func(context.Context, uuid.UUID, uuid.UUID, float64) { close(done) }).
 		Return(nil)
 
 	pool := order.NewAccrualWorkerPool(

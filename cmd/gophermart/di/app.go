@@ -84,13 +84,15 @@ func (a *App) initialize(ctx context.Context) error {
 		return fmt.Errorf("parse auth ttl: %w", err)
 	}
 
+	// repository
 	userRepo := user.NewRepository(dbPool)
 	tokenProvider := auth.NewJWT(cfg.Auth.Secret, authTTL)
-	userSvc := user.NewService(userRepo, tokenProvider)
-	userHandler := user.NewHandler(userSvc, zl)
-
 	orderRepo := order.NewRepository(dbPool)
 	balanceRepo := balance.NewRepository(dbPool)
+
+	// service
+	userSvc := user.NewService(userRepo, tokenProvider)
+	balanceSvc := balance.NewService(balanceRepo)
 
 	accrualClient := accrualclient.New(accrualclient.Config{Address: cfg.Accrual.Address})
 	pollInterval, err := cfg.Accrual.PollIntervalDuration()
@@ -105,19 +107,19 @@ func (a *App) initialize(ctx context.Context) error {
 		},
 		orderRepo,
 		accrualClient,
-		nil, // TODO balance — подключить после появления пакета balance
+		balanceSvc,
 		zl,
 	)
 	a.accrualPool = accrualPool
 
 	orderSvc := order.NewService(orderRepo, accrualPool)
-	orderHandler := order.NewHandler(orderSvc, zl)
 
-	balanceSvc := balance.NewService(balanceRepo)
+	// handlers
+	userHandler := user.NewHandler(userSvc, zl)
+	orderHandler := order.NewHandler(orderSvc, zl)
 	balanceHandler := balance.NewHandler(balanceSvc, zl)
 
 	mux := NewMux(ctx, tokenProvider, userHandler, orderHandler, balanceHandler)
-
 	httpHandler := logger.LoggingMiddleware(zl, mux)
 
 	// 5. Старт HTTP-сервера
@@ -180,8 +182,6 @@ func NewMux(
 		r.Use(user.NewAuthMiddleware(jwt))
 		r.Post("/api/user/orders", orderHandler.CreateOrder())
 		r.Get("/api/user/orders", orderHandler.GetOrders())
-	})
-	r.Group(func(r chi.Router) {
 		r.Post("/api/user/balance/withdraw", balanceHandler.WithdrawBalance())
 		r.Get("/api/user/balance", balanceHandler.GetBalance())
 		r.Get("/api/user/withdrawals", balanceHandler.GetWithdrawals())

@@ -16,6 +16,7 @@ type (
 		WithdrawBalance(ctx context.Context, userID uuid.UUID, opt WithdrawOpt) error
 		SelectBalance(ctx context.Context, userID uuid.UUID) (UserBalance, error)
 		SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]Withdrawals, error)
+		CreditAccrual(ctx context.Context, userID, orderID uuid.UUID, amount float64) error
 	}
 )
 
@@ -33,6 +34,11 @@ func (s *Service) WithdrawBalance(ctx context.Context, userID uuid.UUID, opt Wit
 	}
 
 	return s.repo.WithdrawBalance(ctx, userID, opt)
+}
+
+// CreditAccrual начисляет баллы на счёт пользователя за обработанный заказ.
+func (s *Service) CreditAccrual(ctx context.Context, userID, orderID uuid.UUID, amount float64) error {
+	return s.repo.CreditAccrual(ctx, userID, orderID, amount)
 }
 
 // SelectBalance возвращает текущий баланс и общую сумму списаний пользователя.
