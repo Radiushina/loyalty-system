@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/Radiushina/loyalty-system/internal/httputil"
 	"github.com/Radiushina/loyalty-system/internal/user"
 	"github.com/Radiushina/loyalty-system/pkg/luhn"
 	"github.com/google/uuid"
@@ -40,13 +41,13 @@ func (h *Handler) WithdrawBalance() http.HandlerFunc {
 
 		userID, ok := user.UserIDFromContext(r.Context())
 		if !ok {
-			writeError(w, http.StatusUnauthorized, "unauthorized")
+			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 
 		var opt WithdrawOpt
 		if err := json.NewDecoder(r.Body).Decode(&opt); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request format")
+			httputil.WriteError(w, http.StatusBadRequest, "invalid request format")
 			return
 		}
 
@@ -54,14 +55,14 @@ func (h *Handler) WithdrawBalance() http.HandlerFunc {
 		if err != nil {
 			switch {
 			case errors.Is(err, luhn.ErrInvalidOrderNumber):
-				writeError(w, http.StatusUnprocessableEntity, "invalid order number format")
+				httputil.WriteError(w, http.StatusUnprocessableEntity, "invalid order number format")
 			case errors.Is(err, ErrInsufficientFunds):
-				writeError(w, http.StatusPaymentRequired, "not enough funds")
+				httputil.WriteError(w, http.StatusPaymentRequired, "not enough funds")
 			case errors.Is(err, ErrWithdrawalAlreadyExists):
-				writeError(w, http.StatusConflict, "withdrawal for this order already exists")
+				httputil.WriteError(w, http.StatusConflict, "withdrawal for this order already exists")
 			default:
 				h.log.Error("withdraw balance", zap.Error(err))
-				writeError(w, http.StatusInternalServerError, "internal server error")
+				httputil.WriteError(w, http.StatusInternalServerError, "internal server error")
 			}
 			return
 		}
@@ -75,16 +76,16 @@ func (h *Handler) GetBalance() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := user.UserIDFromContext(r.Context())
 		if !ok {
-			writeError(w, http.StatusUnauthorized, "unauthorized")
+			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 		balance, err := h.service.SelectBalance(r.Context(), userID)
 		if err != nil {
 			h.log.Error("get balance", zap.Error(err))
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			httputil.WriteError(w, http.StatusInternalServerError, "internal server error")
 			return
 		}
-		if err := writeJSON(w, http.StatusOK, balance); err != nil {
+		if err := httputil.WriteJSON(w, http.StatusOK, balance); err != nil {
 			h.log.Error("encode response", zap.Error(err))
 		}
 	}
@@ -95,13 +96,13 @@ func (h *Handler) GetWithdrawals() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := user.UserIDFromContext(r.Context())
 		if !ok {
-			writeError(w, http.StatusUnauthorized, "unauthorized")
+			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 		withdrawals, err := h.service.SelectWithdrawals(r.Context(), userID)
 		if err != nil {
 			h.log.Error("get orders", zap.Error(err))
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			httputil.WriteError(w, http.StatusInternalServerError, "internal server error")
 			return
 		}
 
@@ -110,20 +111,10 @@ func (h *Handler) GetWithdrawals() http.HandlerFunc {
 			return
 		}
 
-		if err := writeJSON(w, http.StatusOK, withdrawalsMapToDTO(withdrawals)); err != nil {
+		if err := httputil.WriteJSON(w, http.StatusOK, withdrawalsMapToDTO(withdrawals)); err != nil {
 			h.log.Error("encode response", zap.Error(err))
 		}
 	}
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	_ = writeJSON(w, status, map[string]string{"msg": message})
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
 }
 
 func withdrawalsMapToDTO(withdrawals []Withdrawals) []WithdrawalsDTO {

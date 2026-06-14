@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Radiushina/loyalty-system/internal/httputil"
 	"go.uber.org/zap"
 )
 
@@ -35,28 +36,28 @@ func (h *Handler) CreateUser(ctx context.Context) http.HandlerFunc {
 
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read body")
+			httputil.WriteError(w, http.StatusBadRequest, "failed to read body")
 			return
 		}
 
 		var u UserAuth
 		if err := json.Unmarshal(b, &u); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON")
+			httputil.WriteError(w, http.StatusBadRequest, "invalid JSON")
 			return
 		}
 
 		user, err := h.service.CreateUser(ctx, u.Login, u.Password)
 		if err != nil {
 			if errors.Is(err, ErrUserAlreadyExists) {
-				writeError(w, http.StatusConflict, "user already exists")
+				httputil.WriteError(w, http.StatusConflict, "user already exists")
 				return
 			}
 			if errors.Is(err, ErrInvalidCredentials) {
-				writeError(w, http.StatusBadRequest, "invalid credentials")
+				httputil.WriteError(w, http.StatusBadRequest, "invalid credentials")
 				return
 			}
 			h.log.Error("create user", zap.Error(err))
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			httputil.WriteError(w, http.StatusInternalServerError, "internal server error")
 			return
 		}
 
@@ -72,28 +73,28 @@ func (h *Handler) GetByLogin(ctx context.Context) http.HandlerFunc {
 
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read body")
+			httputil.WriteError(w, http.StatusBadRequest, "failed to read body")
 			return
 		}
 
 		var u UserAuth
 		if err := json.Unmarshal(b, &u); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON")
+			httputil.WriteError(w, http.StatusBadRequest, "invalid JSON")
 			return
 		}
 
 		user, err := h.service.GetByLogin(ctx, u.Login, u.Password)
 		if err != nil {
 			if errors.Is(err, ErrUserNotFound) {
-				writeError(w, http.StatusUnauthorized, "user not found")
+				httputil.WriteError(w, http.StatusUnauthorized, "user not found")
 				return
 			}
 			if errors.Is(err, ErrInvalidCredentials) {
-				writeError(w, http.StatusUnauthorized, "invalid credentials")
+				httputil.WriteError(w, http.StatusUnauthorized, "invalid credentials")
 				return
 			}
 			h.log.Error("authenticate user", zap.Error(err))
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			httputil.WriteError(w, http.StatusInternalServerError, "internal server error")
 			return
 		}
 
@@ -105,15 +106,5 @@ func (h *Handler) GetByLogin(ctx context.Context) http.HandlerFunc {
 
 func writeAuthSession(w http.ResponseWriter, session AuthSession) error {
 	w.Header().Set("Authorization", "Bearer "+session.Token)
-	return writeJSON(w, http.StatusOK, session)
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	_ = writeJSON(w, status, map[string]string{"msg": message})
+	return httputil.WriteJSON(w, http.StatusOK, session)
 }

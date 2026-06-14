@@ -2,12 +2,12 @@ package order
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"strings"
 
+	"github.com/Radiushina/loyalty-system/internal/httputil"
 	"github.com/Radiushina/loyalty-system/internal/user"
 	"github.com/Radiushina/loyalty-system/pkg/luhn"
 	"github.com/google/uuid"
@@ -39,19 +39,19 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 
 		userID, ok := user.UserIDFromContext(r.Context())
 		if !ok {
-			writeError(w, http.StatusUnauthorized, "unauthorized")
+			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read body")
+			httputil.WriteError(w, http.StatusBadRequest, "failed to read body")
 			return
 		}
 
 		number := strings.TrimSpace(string(body))
 		if number == "" {
-			writeError(w, http.StatusBadRequest, "invalid request format")
+			httputil.WriteError(w, http.StatusBadRequest, "invalid request format")
 			return
 		}
 
@@ -59,14 +59,14 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 		if err != nil {
 			switch {
 			case errors.Is(err, luhn.ErrInvalidOrderNumber):
-				writeError(w, http.StatusUnprocessableEntity, "invalid order number format")
+				httputil.WriteError(w, http.StatusUnprocessableEntity, "invalid order number format")
 			case errors.Is(err, ErrOrderWasUploaded):
-				writeError(w, http.StatusConflict, "the order number has already been uploaded by another user")
+				httputil.WriteError(w, http.StatusConflict, "the order number has already been uploaded by another user")
 			case errors.Is(err, ErrOrderAlreadyUploadedByUser):
 				w.WriteHeader(http.StatusOK)
 			default:
 				h.log.Error("create order", zap.Error(err))
-				writeError(w, http.StatusInternalServerError, "internal server error")
+				httputil.WriteError(w, http.StatusInternalServerError, "internal server error")
 			}
 			return
 		}
@@ -79,14 +79,14 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := user.UserIDFromContext(r.Context())
 		if !ok {
-			writeError(w, http.StatusUnauthorized, "unauthorized")
+			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 
 		orders, err := h.service.SelectOrders(r.Context(), userID)
 		if err != nil {
 			h.log.Error("get orders", zap.Error(err))
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			httputil.WriteError(w, http.StatusInternalServerError, "internal server error")
 			return
 		}
 
@@ -95,20 +95,10 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 			return
 		}
 
-		if err := writeJSON(w, http.StatusOK, ordersMapToDTO(orders)); err != nil {
+		if err := httputil.WriteJSON(w, http.StatusOK, ordersMapToDTO(orders)); err != nil {
 			h.log.Error("encode response", zap.Error(err))
 		}
 	}
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	_ = writeJSON(w, status, map[string]string{"msg": message})
 }
 
 func ordersMapToDTO(orders []Order) []OrderDTO {
