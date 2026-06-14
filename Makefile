@@ -38,6 +38,10 @@ mock:
 test-cover:
 	go test ./internal/... -cover
 
+TEST_PKGS := $(shell go list ./internal/... | grep -v '_mocks$$')
+test-cover1:
+	go test $(TEST_PKGS) -cover
+
 # Автотесты Яндекса (go-autotests). Бинарники: .tools/gophermarttest/, .tools/random/, cmd/accrual/
 GOPHERMART_BIN        := cmd/gophermart/gophermart
 ACCRUAL_BIN           := cmd/accrual/accrual_darwin_arm64

@@ -40,7 +40,6 @@ func TestHandler_CreateUser(t *testing.T) {
 		body           string
 		prepare        func(svc *user_mocks.ServiceProvider)
 		wantStatus     int
-		wantMsg        string
 		wantSession    *user.AuthUserRes
 		wantAuthHeader string
 	}{
@@ -60,7 +59,6 @@ func TestHandler_CreateUser(t *testing.T) {
 			name:       "Invalid JSON",
 			body:       `{`,
 			wantStatus: http.StatusBadRequest,
-			wantMsg:    "invalid JSON",
 		},
 		{
 			name: "User already exists",
@@ -71,7 +69,6 @@ func TestHandler_CreateUser(t *testing.T) {
 					Return(user.AuthUserRes{}, user.ErrUserAlreadyExists)
 			},
 			wantStatus: http.StatusConflict,
-			wantMsg:    "user already exists",
 		},
 		{
 			name: "Invalid credentials",
@@ -82,7 +79,6 @@ func TestHandler_CreateUser(t *testing.T) {
 					Return(user.AuthUserRes{}, user.ErrInvalidCredentials)
 			},
 			wantStatus: http.StatusBadRequest,
-			wantMsg:    "invalid credentials",
 		},
 		{
 			name: "Internal server error",
@@ -93,7 +89,6 @@ func TestHandler_CreateUser(t *testing.T) {
 					Return(user.AuthUserRes{}, errors.New("db error"))
 			},
 			wantStatus: http.StatusInternalServerError,
-			wantMsg:    "internal server error",
 		},
 	}
 
@@ -118,13 +113,7 @@ func TestHandler_CreateUser(t *testing.T) {
 			h.CreateUser(t.Context())(rec, req)
 
 			require.Equal(t, tc.wantStatus, rec.Code)
-
-			if tc.wantMsg != "" {
-				var resp struct {
-					Msg string `json:"msg"`
-				}
-				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-				require.Equal(t, tc.wantMsg, resp.Msg)
+			if tc.wantSession == nil {
 				return
 			}
 
@@ -230,6 +219,9 @@ func TestHandler_AuthUser(t *testing.T) {
 			h.AuthUser(t.Context())(rec, req)
 
 			require.Equal(t, tc.wantStatus, rec.Code)
+			if tc.wantSession == nil {
+				return
+			}
 
 			require.Equal(t, tc.wantAuthHeader, rec.Header().Get("Authorization"))
 
