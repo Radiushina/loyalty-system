@@ -7,6 +7,9 @@ template: testify
 template-data:
   unroll-variadic: true
 packages:
+  github.com/Radiushina/loyalty-system/internal/user:
+    config:
+      recursive: true
   github.com/Radiushina/loyalty-system/internal/order:
     config:
       recursive: true

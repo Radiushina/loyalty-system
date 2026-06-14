@@ -30,37 +30,37 @@ func NewService(repo RepoProvider, tokens TokenProvider) *Service {
 	}
 }
 
-func (s *Service) CreateUser(ctx context.Context, login, password string) (AuthSession, error) {
+func (s *Service) CreateUser(ctx context.Context, login, password string) (AuthUserRes, error) {
 	if login == "" || password == "" {
-		return AuthSession{}, fmt.Errorf("%w: login and password are required", ErrInvalidCredentials)
+		return AuthUserRes{}, fmt.Errorf("%w: login and password are required", ErrInvalidCredentials)
 	}
 
 	user, err := s.repo.CreateUser(ctx, login, password)
 	if err != nil {
-		return AuthSession{}, fmt.Errorf("create user: %w", err)
+		return AuthUserRes{}, fmt.Errorf("create user: %w", err)
 	}
 
 	token, err := s.tokens.Generate(user.ID)
 	if err != nil {
-		return AuthSession{}, fmt.Errorf("generate token: %w", err)
+		return AuthUserRes{}, fmt.Errorf("generate token: %w", err)
 	}
 
 	return NewAuthSession(user, token), nil
 }
 
-func (s *Service) GetByLogin(ctx context.Context, login, password string) (AuthSession, error) {
+func (s *Service) GetByLogin(ctx context.Context, login, password string) (AuthUserRes, error) {
 	if login == "" || password == "" {
-		return AuthSession{}, fmt.Errorf("%w: login and password are required", ErrInvalidCredentials)
+		return AuthUserRes{}, fmt.Errorf("%w: login and password are required", ErrInvalidCredentials)
 	}
 
 	user, err := s.repo.GetByLogin(ctx, login, password)
 	if err != nil {
-		return AuthSession{}, fmt.Errorf("authenticate: %w", err)
+		return AuthUserRes{}, fmt.Errorf("authenticate: %w", err)
 	}
 
 	token, err := s.tokens.Generate(user.ID)
 	if err != nil {
-		return AuthSession{}, fmt.Errorf("generate token: %w", err)
+		return AuthUserRes{}, fmt.Errorf("generate token: %w", err)
 	}
 
 	return NewAuthSession(user, token), nil

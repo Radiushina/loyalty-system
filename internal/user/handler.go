@@ -18,8 +18,8 @@ type (
 	}
 
 	ServiceProvider interface {
-		CreateUser(ctx context.Context, login, password string) (AuthSession, error)
-		GetByLogin(ctx context.Context, login, password string) (AuthSession, error)
+		CreateUser(ctx context.Context, login, password string) (AuthUserRes, error)
+		GetByLogin(ctx context.Context, login, password string) (AuthUserRes, error)
 	}
 )
 
@@ -40,7 +40,7 @@ func (h *Handler) CreateUser(ctx context.Context) http.HandlerFunc {
 			return
 		}
 
-		var u UserAuth
+		var u AuthUserReq
 		if err := json.Unmarshal(b, &u); err != nil {
 			httputil.WriteError(w, http.StatusBadRequest, "invalid JSON")
 			return
@@ -67,7 +67,7 @@ func (h *Handler) CreateUser(ctx context.Context) http.HandlerFunc {
 	}
 }
 
-func (h *Handler) GetByLogin(ctx context.Context) http.HandlerFunc {
+func (h *Handler) AuthUser(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
 
@@ -77,7 +77,7 @@ func (h *Handler) GetByLogin(ctx context.Context) http.HandlerFunc {
 			return
 		}
 
-		var u UserAuth
+		var u AuthUserReq
 		if err := json.Unmarshal(b, &u); err != nil {
 			httputil.WriteError(w, http.StatusBadRequest, "invalid JSON")
 			return
@@ -104,7 +104,7 @@ func (h *Handler) GetByLogin(ctx context.Context) http.HandlerFunc {
 	}
 }
 
-func writeAuthSession(w http.ResponseWriter, session AuthSession) error {
+func writeAuthSession(w http.ResponseWriter, session AuthUserRes) error {
 	w.Header().Set("Authorization", "Bearer "+session.Token)
 	return httputil.WriteJSON(w, http.StatusOK, session)
 }

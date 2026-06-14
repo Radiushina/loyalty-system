@@ -43,7 +43,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSession'
+                $ref: '#/components/schemas/AuthUserRes'
         400:
           $ref: '#/components/responses/400'
         409:
@@ -79,7 +79,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSession'
+                $ref: '#/components/schemas/AuthUserRes'
         400:
           $ref: '#/components/responses/400'
         401:
@@ -345,7 +345,7 @@ components:
             $ref: '#/components/schemas/UnsuccessfulResponse'
           example: { "msg": "the order number has already been uploaded by another user." }
   schemas:
-    AuthSession:
+    AuthUserRes:
       type: object
       required: [ user, token ]
       properties:

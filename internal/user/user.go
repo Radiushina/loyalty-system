@@ -19,7 +19,7 @@ type User struct {
 	Password string    `db:"-" json:"-"`
 }
 
-type UserAuth struct {
+type AuthUserReq struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }
@@ -29,13 +29,13 @@ type UserResponse struct {
 	Login string    `json:"login"`
 }
 
-type AuthSession struct {
+type AuthUserRes struct {
 	User  UserResponse `json:"user"`
 	Token string       `json:"token"`
 }
 
-func NewAuthSession(u User, token string) AuthSession {
-	return AuthSession{
+func NewAuthSession(u User, token string) AuthUserRes {
+	return AuthUserRes{
 		User: UserResponse{
 			ID:    u.ID,
 			Login: u.Login,

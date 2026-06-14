@@ -183,7 +183,7 @@ func NewMux(
 	r := chi.NewRouter()
 
 	r.Post("/api/user/register", userHandler.CreateUser(ctx))
-	r.Post("/api/user/login", userHandler.GetByLogin(ctx))
+	r.Post("/api/user/login", userHandler.AuthUser(ctx))
 
 	r.Group(func(r chi.Router) {
 		r.Use(user.NewAuthMiddleware(jwt))

@@ -22,14 +22,6 @@ func New(level string) (*zap.Logger, error) {
 	return zl, nil
 }
 
-// OrNop returns l if it's not nil, otherwise a no-op logger.
-func OrNop(l *zap.Logger) *zap.Logger {
-	if l == nil {
-		return zap.NewNop()
-	}
-	return l
-}
-
 type loggingResponseWriter struct {
 	http.ResponseWriter
 	status      int
