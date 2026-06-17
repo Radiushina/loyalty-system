@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Radiushina/loyalty-system/pkg/accrualclient"
@@ -58,10 +59,12 @@ type AccrualWorkerPool struct {
 	jobs     chan OrderJob
 	inflight sync.Map
 
-	rateLimitMu    sync.Mutex
-	rateLimitUntil time.Time
+	rateLimitMu            sync.Mutex
+	rateLimitUntil         time.Time
+	rateLimitUntilUnixNano atomic.Int64
 }
 
+// NewAccrualWorkerPool создаёт пул с дефолтными значениями для Workers, PollInterval и размера очереди.
 func NewAccrualWorkerPool(
 	cfg WorkerPoolConfig,
 	repo WorkerRepoProvider,
@@ -109,6 +112,7 @@ func (p *AccrualWorkerPool) Enqueue(job OrderJob) {
 	p.tryEnqueue(job)
 }
 
+// scanner по таймеру периодически запускает scanPending, пока не отменён ctx.
 func (p *AccrualWorkerPool) scanner(ctx context.Context) {
 	ticker := time.NewTicker(p.cfg.PollInterval)
 	defer ticker.Stop()
@@ -123,6 +127,7 @@ func (p *AccrualWorkerPool) scanner(ctx context.Context) {
 	}
 }
 
+// scanPending читает из БД заказы в статусе NEW/PROCESSING и ставит их в очередь на опрос.
 func (p *AccrualWorkerPool) scanPending(ctx context.Context) {
 	orders, err := p.repo.SelectPendingOrders(ctx, p.cfg.PollBatch)
 	if err != nil {
@@ -135,6 +140,7 @@ func (p *AccrualWorkerPool) scanPending(ctx context.Context) {
 	}
 }
 
+// worker в цикле берёт задачи из очереди и обрабатывает их через processJob.
 func (p *AccrualWorkerPool) worker(ctx context.Context, workerID int) {
 	for {
 		select {
@@ -146,6 +152,8 @@ func (p *AccrualWorkerPool) worker(ctx context.Context, workerID int) {
 	}
 }
 
+// tryEnqueue ставит заказ в очередь, если он ещё не обрабатывается (inflight).
+// При переполнении очереди задача отбрасывается без блокировки.
 func (p *AccrualWorkerPool) tryEnqueue(job OrderJob) bool {
 	if _, loaded := p.inflight.LoadOrStore(job.ID, struct{}{}); loaded {
 		return false
@@ -160,6 +168,8 @@ func (p *AccrualWorkerPool) tryEnqueue(job OrderJob) bool {
 	}
 }
 
+// processJob опрашивает внешнюю систему расчёта по одному заказу и обрабатывает результат:
+// rate limit, временные ошибки, обновление статуса и начисление.
 func (p *AccrualWorkerPool) processJob(ctx context.Context, workerID int, job OrderJob) {
 	defer p.inflight.Delete(job.ID)
 
@@ -194,6 +204,8 @@ func (p *AccrualWorkerPool) processJob(ctx context.Context, workerID int, job Or
 	}
 }
 
+// applyAccrualUpdate сохраняет новый статус и accrual в БД, начисляет баллы при PROCESSED
+// и повторно ставит заказ в очередь, если статус всё ещё NEW или PROCESSING.
 func (p *AccrualWorkerPool) applyAccrualUpdate(ctx context.Context, job OrderJob, info accrualclient.OrderInfo) error {
 	current, err := p.repo.GetOrderByID(ctx, job.ID)
 	if err != nil {
@@ -238,12 +250,14 @@ func (p *AccrualWorkerPool) applyAccrualUpdate(ctx context.Context, job OrderJob
 	return nil
 }
 
+// waitRateLimit приостанавливает воркер до истечения глобального rate limit от accrual API.
 func (p *AccrualWorkerPool) waitRateLimit(ctx context.Context) {
-	p.rateLimitMu.Lock()
-	until := p.rateLimitUntil
-	p.rateLimitMu.Unlock()
+	untilNano := p.rateLimitUntilUnixNano.Load()
+	if untilNano == 0 {
+		return
+	}
 
-	wait := time.Until(until)
+	wait := time.Until(time.Unix(0, untilNano))
 	if wait <= 0 {
 		return
 	}
@@ -256,16 +270,26 @@ func (p *AccrualWorkerPool) waitRateLimit(ctx context.Context) {
 	}
 }
 
+// setRateLimit продлевает глобальную паузу после 429; хранится максимальный дедлайн среди конкурентных записей.
 func (p *AccrualWorkerPool) setRateLimit(retryAfter time.Duration) {
 	if retryAfter <= 0 {
 		retryAfter = defaultRateLimitBackoff
 	}
-
-	p.rateLimitMu.Lock()
-	p.rateLimitUntil = time.Now().Add(retryAfter)
-	p.rateLimitMu.Unlock()
+	newUntil := time.Now().Add(retryAfter).UnixNano()
+	// храним максимальный дедлайн ожидания
+	for { // повторяем, пока не удастся атомарно записать новый дедлайн
+		current := p.rateLimitUntilUnixNano.Load() // читаем текущий дедлайн (unix nano); 0 = лимита нет
+		if newUntil <= current {
+			return // новый дедлайн не позже уже установленного — выходим, ничего не меняем
+		}
+		if p.rateLimitUntilUnixNano.CompareAndSwap(current, newUntil) {
+			return // если значение всё ещё current — записываем newUntil и выходим
+		}
+		// CompareAndSwap не сработал: другая горутина успела изменить значение — идём на новый круг цикла
+	}
 }
 
+// orderToJob преобразует заказ из БД в задачу для очереди воркеров.
 func orderToJob(o Order) OrderJob {
 	return OrderJob{
 		ID:     o.ID,
