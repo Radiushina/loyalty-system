@@ -106,23 +106,23 @@ func (_c *ServiceProvider_SelectBalance_Call) RunAndReturn(run func(ctx context.
 }
 
 // SelectWithdrawals provides a mock function for the type ServiceProvider
-func (_mock *ServiceProvider) SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]balance.Withdrawals, error) {
+func (_mock *ServiceProvider) SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]balance.Withdrawal, error) {
 	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SelectWithdrawals")
 	}
 
-	var r0 []balance.Withdrawals
+	var r0 []balance.Withdrawal
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]balance.Withdrawals, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]balance.Withdrawal, error)); ok {
 		return returnFunc(ctx, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []balance.Withdrawals); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []balance.Withdrawal); ok {
 		r0 = returnFunc(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]balance.Withdrawals)
+			r0 = ret.Get(0).([]balance.Withdrawal)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
@@ -163,12 +163,12 @@ func (_c *ServiceProvider_SelectWithdrawals_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *ServiceProvider_SelectWithdrawals_Call) Return(withdrawalss []balance.Withdrawals, err error) *ServiceProvider_SelectWithdrawals_Call {
-	_c.Call.Return(withdrawalss, err)
+func (_c *ServiceProvider_SelectWithdrawals_Call) Return(withdrawals []balance.Withdrawal, err error) *ServiceProvider_SelectWithdrawals_Call {
+	_c.Call.Return(withdrawals, err)
 	return _c
 }
 
-func (_c *ServiceProvider_SelectWithdrawals_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) ([]balance.Withdrawals, error)) *ServiceProvider_SelectWithdrawals_Call {
+func (_c *ServiceProvider_SelectWithdrawals_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) ([]balance.Withdrawal, error)) *ServiceProvider_SelectWithdrawals_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -399,23 +399,23 @@ func (_c *RepoProvider_SelectBalance_Call) RunAndReturn(run func(ctx context.Con
 }
 
 // SelectWithdrawals provides a mock function for the type RepoProvider
-func (_mock *RepoProvider) SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]balance.Withdrawals, error) {
+func (_mock *RepoProvider) SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]balance.Withdrawal, error) {
 	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SelectWithdrawals")
 	}
 
-	var r0 []balance.Withdrawals
+	var r0 []balance.Withdrawal
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]balance.Withdrawals, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]balance.Withdrawal, error)); ok {
 		return returnFunc(ctx, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []balance.Withdrawals); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []balance.Withdrawal); ok {
 		r0 = returnFunc(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]balance.Withdrawals)
+			r0 = ret.Get(0).([]balance.Withdrawal)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
@@ -456,12 +456,12 @@ func (_c *RepoProvider_SelectWithdrawals_Call) Run(run func(ctx context.Context,
 	return _c
 }
 
-func (_c *RepoProvider_SelectWithdrawals_Call) Return(withdrawalss []balance.Withdrawals, err error) *RepoProvider_SelectWithdrawals_Call {
-	_c.Call.Return(withdrawalss, err)
+func (_c *RepoProvider_SelectWithdrawals_Call) Return(withdrawals []balance.Withdrawal, err error) *RepoProvider_SelectWithdrawals_Call {
+	_c.Call.Return(withdrawals, err)
 	return _c
 }
 
-func (_c *RepoProvider_SelectWithdrawals_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) ([]balance.Withdrawals, error)) *RepoProvider_SelectWithdrawals_Call {
+func (_c *RepoProvider_SelectWithdrawals_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) ([]balance.Withdrawal, error)) *RepoProvider_SelectWithdrawals_Call {
 	_c.Call.Return(run)
 	return _c
 }

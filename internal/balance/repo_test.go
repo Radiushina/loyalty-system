@@ -6,48 +6,90 @@ import (
 
 	"github.com/Radiushina/loyalty-system/internal/balance"
 	"github.com/Radiushina/loyalty-system/pkg/tests/containers/postgres"
+	"github.com/doug-martin/goqu/v9"
+	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	testBuilder      = goqu.Dialect("postgres")
+	usersTable       = goqu.T("users")
+	userBalanceTable = goqu.T("user_balance")
+	withdrawalsTable = goqu.T("withdrawals")
+	ordersTable      = goqu.T("orders")
+)
+
 func seedUserWithID(t *testing.T, pool *pgxpool.Pool, id uuid.UUID) {
 	t.Helper()
 
-	_, err := pool.Exec(
-		t.Context(),
-		`INSERT INTO users (id, login, password) VALUES ($1, $2, $3)`,
-		id,
-		id.String(),
-		"password",
-	)
+	query, args, err := testBuilder.Insert(usersTable).
+		Prepared(true).
+		Rows(goqu.Record{
+			"id":       id,
+			"login":    id.String(),
+			"password": "password",
+		}).
+		ToSQL()
+	require.NoError(t, err)
+
+	_, err = pool.Exec(t.Context(), query, args...)
 	require.NoError(t, err)
 }
 
 func seedBalance(t *testing.T, pool *pgxpool.Pool, userID uuid.UUID, current, withdrawn float64) {
 	t.Helper()
 
-	_, err := pool.Exec(
-		t.Context(),
-		`INSERT INTO user_balance (user_id, current, withdrawn) VALUES ($1, $2, $3)`,
-		userID,
-		current,
-		withdrawn,
-	)
+	query, args, err := testBuilder.Insert(userBalanceTable).
+		Prepared(true).
+		Rows(goqu.Record{
+			"user_id":   userID,
+			"current":   current,
+			"withdrawn": withdrawn,
+		}).
+		ToSQL()
+	require.NoError(t, err)
+
+	_, err = pool.Exec(t.Context(), query, args...)
+	require.NoError(t, err)
+}
+
+func seedWithdrawal(t *testing.T, pool *pgxpool.Pool, userID uuid.UUID, order string, sum float64, processedAt time.Time) {
+	t.Helper()
+
+	query, args, err := testBuilder.Insert(withdrawalsTable).
+		Prepared(true).
+		Rows(goqu.Record{
+			"user_id":      userID,
+			"order_number": order,
+			"sum":          sum,
+			"processed_at": processedAt,
+		}).
+		ToSQL()
+	require.NoError(t, err)
+
+	_, err = pool.Exec(t.Context(), query, args...)
 	require.NoError(t, err)
 }
 
 func seedOrder(t *testing.T, pool *pgxpool.Pool, orderID, userID uuid.UUID, number string) {
 	t.Helper()
 
-	_, err := pool.Exec(
-		t.Context(),
-		`INSERT INTO orders (id, user_id, number, status, accrual, uploaded_at)
-		 VALUES ($1, $2, $3, 'PROCESSED', 0, NOW())`,
-		orderID,
-		userID,
-		number,
-	)
+	query, args, err := testBuilder.Insert(ordersTable).
+		Prepared(true).
+		Rows(goqu.Record{
+			"id":          orderID,
+			"user_id":     userID,
+			"number":      number,
+			"status":      "PROCESSED",
+			"accrual":     0,
+			"uploaded_at": goqu.L("NOW()"),
+		}).
+		ToSQL()
+	require.NoError(t, err)
+
+	_, err = pool.Exec(t.Context(), query, args...)
 	require.NoError(t, err)
 }
 
@@ -297,20 +339,20 @@ func TestRepo_SelectWithdrawals(t *testing.T) {
 	repo := balance.NewRepository(pool)
 
 	seedUserWithID(t, pool, userID)
-	seedBalance(t, pool, userID, 1000, 0)
 
-	first := balance.WithdrawOpt{Order: "79927398713", Sum: 100}
-	second := balance.WithdrawOpt{Order: "33763345", Sum: 200}
+	older := time.Date(2024, 6, 1, 10, 0, 0, 0, time.UTC)
+	newer := time.Date(2024, 6, 2, 10, 0, 0, 0, time.UTC)
 
-	require.NoError(t, repo.WithdrawBalance(t.Context(), userID, first))
-	time.Sleep(10 * time.Millisecond)
-	require.NoError(t, repo.WithdrawBalance(t.Context(), userID, second))
+	seedWithdrawal(t, pool, userID, "79927398713", 100, older)
+	seedWithdrawal(t, pool, userID, "33763345", 200, newer)
 
 	withdrawals, err := repo.SelectWithdrawals(t.Context(), userID)
 	require.NoError(t, err)
 	require.Len(t, withdrawals, 2)
 	require.Equal(t, "33763345", withdrawals[0].Order)
 	require.Equal(t, float64(200), withdrawals[0].Sum)
+	require.Equal(t, newer, withdrawals[0].ProcessedAt.UTC())
 	require.Equal(t, "79927398713", withdrawals[1].Order)
 	require.Equal(t, float64(100), withdrawals[1].Sum)
+	require.Equal(t, older, withdrawals[1].ProcessedAt.UTC())
 }

@@ -193,9 +193,11 @@ func TestHandler_GetBalance(t *testing.T) {
 			wantBody: func(t *testing.T, body []byte) {
 				t.Helper()
 
-				var got balance.UserBalance
+				var got struct {
+					Current   float64 `json:"current"`
+					Withdrawn float64 `json:"withdrawn"`
+				}
 				require.NoError(t, json.Unmarshal(body, &got))
-				require.Equal(t, userID, got.UserID)
 				require.Equal(t, 500.5, got.Current)
 				require.Equal(t, float64(42), got.Withdrawn)
 			},

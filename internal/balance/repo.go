@@ -187,7 +187,7 @@ func (r *Repo) SelectBalance(ctx context.Context, userID uuid.UUID) (UserBalance
 }
 
 // SelectWithdrawals читает список списаний пользователя из withdrawals по processed_at DESC.
-func (r *Repo) SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]Withdrawals, error) {
+func (r *Repo) SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]Withdrawal, error) {
 	query, args, err := r.builder.From(withdrawalsTable).
 		Select(
 			goqu.C("order_number"),
@@ -207,7 +207,7 @@ func (r *Repo) SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]Withd
 		return nil, fmt.Errorf("failed to query get orders: %w", err)
 	}
 
-	withdrawals, err := pgx.CollectRows(rows, pgx.RowToStructByName[Withdrawals])
+	withdrawals, err := pgx.CollectRows(rows, pgx.RowToStructByName[Withdrawal])
 	if err != nil {
 		return nil, fmt.Errorf("failed to collect orders: %w", err)
 	}

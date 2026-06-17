@@ -22,7 +22,7 @@ type (
 	ServiceProvider interface {
 		WithdrawBalance(ctx context.Context, userID uuid.UUID, opt WithdrawOpt) error
 		SelectBalance(ctx context.Context, userID uuid.UUID) (UserBalance, error)
-		SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]Withdrawals, error)
+		SelectWithdrawals(ctx context.Context, userID uuid.UUID) ([]Withdrawal, error)
 	}
 )
 
@@ -117,8 +117,8 @@ func (h *Handler) GetWithdrawals() http.HandlerFunc {
 	}
 }
 
-func withdrawalsMapToDTO(withdrawals []Withdrawals) []WithdrawalsDTO {
-	res := make([]WithdrawalsDTO, 0, len(withdrawals))
+func withdrawalsMapToDTO(withdrawals []Withdrawal) []WithdrawalDTO {
+	res := make([]WithdrawalDTO, 0, len(withdrawals))
 	for _, w := range withdrawals {
 		res = append(res, w.toDTO())
 	}
