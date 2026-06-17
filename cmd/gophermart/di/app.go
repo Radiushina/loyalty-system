@@ -3,6 +3,7 @@ package di
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -82,7 +83,10 @@ func (a *App) initialize(ctx context.Context) error {
 		return fmt.Errorf("ping postgres: %w", err)
 	}
 	a.db = dbPool
-	zl.Info("postgres connected", zap.String("database_uri", dsn))
+	zl.Info("postgres connected",
+		zap.String("host", net.JoinHostPort(cfg.Storage.Host, cfg.Storage.Port)),
+		zap.String("database", cfg.Storage.Database),
+	)
 	zl.Info("accrual system configured", zap.String("address", cfg.Accrual.Address))
 
 	// 4. Инициализируем repo, service, handler
@@ -98,7 +102,8 @@ func (a *App) initialize(ctx context.Context) error {
 	balanceRepo := balance.NewRepository(dbPool)
 
 	// service
-	userSvc := user.NewService(userRepo, tokenProvider)
+	hasher := user.NewHasher()
+	userSvc := user.NewService(userRepo, tokenProvider, hasher)
 	balanceSvc := balance.NewService(balanceRepo)
 
 	accrualClient := accrualclient.New(accrualclient.Config{Address: cfg.Accrual.Address})
@@ -126,7 +131,7 @@ func (a *App) initialize(ctx context.Context) error {
 	orderHandler := order.NewHandler(orderSvc, zl)
 	balanceHandler := balance.NewHandler(balanceSvc, zl)
 
-	mux := NewMux(ctx, tokenProvider, userHandler, orderHandler, balanceHandler)
+	mux := NewMux(tokenProvider, userHandler, orderHandler, balanceHandler)
 	httpHandler := logger.LoggingMiddleware(zl, mux)
 
 	// 5. Старт HTTP-сервера
@@ -174,7 +179,6 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 func NewMux(
-	ctx context.Context,
 	jwt *auth.JWT,
 	userHandler *user.Handler,
 	orderHandler *order.Handler,
@@ -182,8 +186,8 @@ func NewMux(
 ) http.Handler {
 	r := chi.NewRouter()
 
-	r.Post("/api/user/register", userHandler.CreateUser(ctx))
-	r.Post("/api/user/login", userHandler.AuthUser(ctx))
+	r.Post("/api/user/register", userHandler.CreateUser())
+	r.Post("/api/user/login", userHandler.AuthUser())
 
 	r.Group(func(r chi.Router) {
 		r.Use(user.NewAuthMiddleware(jwt))

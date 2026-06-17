@@ -39,8 +39,8 @@ func (h *Handler) WithdrawBalance() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
 
-		userID, ok := user.UserIDFromContext(r.Context())
-		if !ok {
+		userID, err := user.UserIDFromContext(r.Context())
+		if errors.Is(err, user.ErrUnauthorized) {
 			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
@@ -51,7 +51,7 @@ func (h *Handler) WithdrawBalance() http.HandlerFunc {
 			return
 		}
 
-		err := h.service.WithdrawBalance(r.Context(), userID, opt)
+		err = h.service.WithdrawBalance(r.Context(), userID, opt)
 		if err != nil {
 			switch {
 			case errors.Is(err, luhn.ErrInvalidOrderNumber):
@@ -74,8 +74,8 @@ func (h *Handler) WithdrawBalance() http.HandlerFunc {
 // GetBalance обрабатывает GET /api/user/balance — текущий баланс и сумма списаний за всё время.
 func (h *Handler) GetBalance() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := user.UserIDFromContext(r.Context())
-		if !ok {
+		userID, err := user.UserIDFromContext(r.Context())
+		if errors.Is(err, user.ErrUnauthorized) {
 			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
@@ -94,8 +94,8 @@ func (h *Handler) GetBalance() http.HandlerFunc {
 // GetWithdrawals обрабатывает GET /api/user/withdrawals — история списаний от новых к старым.
 func (h *Handler) GetWithdrawals() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := user.UserIDFromContext(r.Context())
-		if !ok {
+		userID, err := user.UserIDFromContext(r.Context())
+		if errors.Is(err, user.ErrUnauthorized) {
 			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}

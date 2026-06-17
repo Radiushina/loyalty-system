@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
 
   adminer:
-    image: adminer
+    image: adminer:5
     platform: linux/arm64
     ports:
       - "8081:8080"

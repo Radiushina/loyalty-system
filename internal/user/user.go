@@ -16,7 +16,7 @@ var (
 type User struct {
 	ID       uuid.UUID `db:"id" json:"id"`
 	Login    string    `db:"login" json:"login"`
-	Password string    `db:"-" json:"-"`
+	Password string    `db:"password" json:"-"`
 }
 
 type AuthUserReq struct {

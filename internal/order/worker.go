@@ -268,7 +268,7 @@ func (p *AccrualWorkerPool) setRateLimit(retryAfter time.Duration) {
 
 func orderToJob(o Order) OrderJob {
 	return OrderJob{
-		ID:     o.Id,
+		ID:     o.ID,
 		UserID: o.UserID,
 		Number: o.Number,
 		Status: o.Status,

@@ -211,8 +211,8 @@ func (_m *RepoProvider) EXPECT() *RepoProvider_Expecter {
 }
 
 // CreateUser provides a mock function for the type RepoProvider
-func (_mock *RepoProvider) CreateUser(ctx context.Context, ogin string, password string) (user.User, error) {
-	ret := _mock.Called(ctx, ogin, password)
+func (_mock *RepoProvider) CreateUser(ctx context.Context, login string, hashedPassword string) (user.User, error) {
+	ret := _mock.Called(ctx, login, hashedPassword)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateUser")
@@ -221,15 +221,15 @@ func (_mock *RepoProvider) CreateUser(ctx context.Context, ogin string, password
 	var r0 user.User
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (user.User, error)); ok {
-		return returnFunc(ctx, ogin, password)
+		return returnFunc(ctx, login, hashedPassword)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) user.User); ok {
-		r0 = returnFunc(ctx, ogin, password)
+		r0 = returnFunc(ctx, login, hashedPassword)
 	} else {
 		r0 = ret.Get(0).(user.User)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, ogin, password)
+		r1 = returnFunc(ctx, login, hashedPassword)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -243,13 +243,13 @@ type RepoProvider_CreateUser_Call struct {
 
 // CreateUser is a helper method to define mock.On call
 //   - ctx context.Context
-//   - ogin string
-//   - password string
-func (_e *RepoProvider_Expecter) CreateUser(ctx interface{}, ogin interface{}, password interface{}) *RepoProvider_CreateUser_Call {
-	return &RepoProvider_CreateUser_Call{Call: _e.mock.On("CreateUser", ctx, ogin, password)}
+//   - login string
+//   - hashedPassword string
+func (_e *RepoProvider_Expecter) CreateUser(ctx interface{}, login interface{}, hashedPassword interface{}) *RepoProvider_CreateUser_Call {
+	return &RepoProvider_CreateUser_Call{Call: _e.mock.On("CreateUser", ctx, login, hashedPassword)}
 }
 
-func (_c *RepoProvider_CreateUser_Call) Run(run func(ctx context.Context, ogin string, password string)) *RepoProvider_CreateUser_Call {
+func (_c *RepoProvider_CreateUser_Call) Run(run func(ctx context.Context, login string, hashedPassword string)) *RepoProvider_CreateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -277,14 +277,14 @@ func (_c *RepoProvider_CreateUser_Call) Return(user1 user.User, err error) *Repo
 	return _c
 }
 
-func (_c *RepoProvider_CreateUser_Call) RunAndReturn(run func(ctx context.Context, ogin string, password string) (user.User, error)) *RepoProvider_CreateUser_Call {
+func (_c *RepoProvider_CreateUser_Call) RunAndReturn(run func(ctx context.Context, login string, hashedPassword string) (user.User, error)) *RepoProvider_CreateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetByLogin provides a mock function for the type RepoProvider
-func (_mock *RepoProvider) GetByLogin(ctx context.Context, ogin string, password string) (user.User, error) {
-	ret := _mock.Called(ctx, ogin, password)
+func (_mock *RepoProvider) GetByLogin(ctx context.Context, login string) (user.User, error) {
+	ret := _mock.Called(ctx, login)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByLogin")
@@ -292,16 +292,16 @@ func (_mock *RepoProvider) GetByLogin(ctx context.Context, ogin string, password
 
 	var r0 user.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (user.User, error)); ok {
-		return returnFunc(ctx, ogin, password)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (user.User, error)); ok {
+		return returnFunc(ctx, login)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) user.User); ok {
-		r0 = returnFunc(ctx, ogin, password)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) user.User); ok {
+		r0 = returnFunc(ctx, login)
 	} else {
 		r0 = ret.Get(0).(user.User)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, ogin, password)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, login)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -315,13 +315,12 @@ type RepoProvider_GetByLogin_Call struct {
 
 // GetByLogin is a helper method to define mock.On call
 //   - ctx context.Context
-//   - ogin string
-//   - password string
-func (_e *RepoProvider_Expecter) GetByLogin(ctx interface{}, ogin interface{}, password interface{}) *RepoProvider_GetByLogin_Call {
-	return &RepoProvider_GetByLogin_Call{Call: _e.mock.On("GetByLogin", ctx, ogin, password)}
+//   - login string
+func (_e *RepoProvider_Expecter) GetByLogin(ctx interface{}, login interface{}) *RepoProvider_GetByLogin_Call {
+	return &RepoProvider_GetByLogin_Call{Call: _e.mock.On("GetByLogin", ctx, login)}
 }
 
-func (_c *RepoProvider_GetByLogin_Call) Run(run func(ctx context.Context, ogin string, password string)) *RepoProvider_GetByLogin_Call {
+func (_c *RepoProvider_GetByLogin_Call) Run(run func(ctx context.Context, login string)) *RepoProvider_GetByLogin_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -331,14 +330,9 @@ func (_c *RepoProvider_GetByLogin_Call) Run(run func(ctx context.Context, ogin s
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -349,7 +343,7 @@ func (_c *RepoProvider_GetByLogin_Call) Return(user1 user.User, err error) *Repo
 	return _c
 }
 
-func (_c *RepoProvider_GetByLogin_Call) RunAndReturn(run func(ctx context.Context, ogin string, password string) (user.User, error)) *RepoProvider_GetByLogin_Call {
+func (_c *RepoProvider_GetByLogin_Call) RunAndReturn(run func(ctx context.Context, login string) (user.User, error)) *RepoProvider_GetByLogin_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -437,6 +431,150 @@ func (_c *TokenProvider_Generate_Call) Return(s string, err error) *TokenProvide
 }
 
 func (_c *TokenProvider_Generate_Call) RunAndReturn(run func(userID uuid.UUID) (string, error)) *TokenProvider_Generate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// NewHasherProvider creates a new instance of HasherProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewHasherProvider(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *HasherProvider {
+	mock := &HasherProvider{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// HasherProvider is an autogenerated mock type for the HasherProvider type
+type HasherProvider struct {
+	mock.Mock
+}
+
+type HasherProvider_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *HasherProvider) EXPECT() *HasherProvider_Expecter {
+	return &HasherProvider_Expecter{mock: &_m.Mock}
+}
+
+// Compare provides a mock function for the type HasherProvider
+func (_mock *HasherProvider) Compare(hash string, plain string) error {
+	ret := _mock.Called(hash, plain)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Compare")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = returnFunc(hash, plain)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// HasherProvider_Compare_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Compare'
+type HasherProvider_Compare_Call struct {
+	*mock.Call
+}
+
+// Compare is a helper method to define mock.On call
+//   - hash string
+//   - plain string
+func (_e *HasherProvider_Expecter) Compare(hash interface{}, plain interface{}) *HasherProvider_Compare_Call {
+	return &HasherProvider_Compare_Call{Call: _e.mock.On("Compare", hash, plain)}
+}
+
+func (_c *HasherProvider_Compare_Call) Run(run func(hash string, plain string)) *HasherProvider_Compare_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *HasherProvider_Compare_Call) Return(err error) *HasherProvider_Compare_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *HasherProvider_Compare_Call) RunAndReturn(run func(hash string, plain string) error) *HasherProvider_Compare_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Hash provides a mock function for the type HasherProvider
+func (_mock *HasherProvider) Hash(plain string) (string, error) {
+	ret := _mock.Called(plain)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Hash")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (string, error)); ok {
+		return returnFunc(plain)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
+		r0 = returnFunc(plain)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
+		r1 = returnFunc(plain)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// HasherProvider_Hash_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Hash'
+type HasherProvider_Hash_Call struct {
+	*mock.Call
+}
+
+// Hash is a helper method to define mock.On call
+//   - plain string
+func (_e *HasherProvider_Expecter) Hash(plain interface{}) *HasherProvider_Hash_Call {
+	return &HasherProvider_Hash_Call{Call: _e.mock.On("Hash", plain)}
+}
+
+func (_c *HasherProvider_Hash_Call) Run(run func(plain string)) *HasherProvider_Hash_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *HasherProvider_Hash_Call) Return(s string, err error) *HasherProvider_Hash_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *HasherProvider_Hash_Call) RunAndReturn(run func(plain string) (string, error)) *HasherProvider_Hash_Call {
 	_c.Call.Return(run)
 	return _c
 }

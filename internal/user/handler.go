@@ -30,7 +30,7 @@ func NewHandler(service ServiceProvider, log *zap.Logger) *Handler {
 	}
 }
 
-func (h *Handler) CreateUser(ctx context.Context) http.HandlerFunc {
+func (h *Handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
 
@@ -46,7 +46,7 @@ func (h *Handler) CreateUser(ctx context.Context) http.HandlerFunc {
 			return
 		}
 
-		user, err := h.service.CreateUser(ctx, u.Login, u.Password)
+		user, err := h.service.CreateUser(r.Context(), u.Login, u.Password)
 		if err != nil {
 			if errors.Is(err, ErrUserAlreadyExists) {
 				httputil.WriteError(w, http.StatusConflict, "user already exists")
@@ -67,7 +67,7 @@ func (h *Handler) CreateUser(ctx context.Context) http.HandlerFunc {
 	}
 }
 
-func (h *Handler) AuthUser(ctx context.Context) http.HandlerFunc {
+func (h *Handler) AuthUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
 
@@ -83,7 +83,7 @@ func (h *Handler) AuthUser(ctx context.Context) http.HandlerFunc {
 			return
 		}
 
-		user, err := h.service.GetByLogin(ctx, u.Login, u.Password)
+		user, err := h.service.GetByLogin(r.Context(), u.Login, u.Password)
 		if err != nil {
 			if errors.Is(err, ErrUserNotFound) {
 				httputil.WriteError(w, http.StatusUnauthorized, "user not found")

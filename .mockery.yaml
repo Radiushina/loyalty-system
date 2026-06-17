@@ -2,7 +2,7 @@ all: true
 dir: '{{.InterfaceDir}}/{{.SrcPackageName}}_mocks'
 structname: '{{.InterfaceName}}'
 pkgname: '{{.SrcPackageName}}_mocks'
-filename: "{{.SrcPackageName}}_gen.go"
+filename: "{{.SrcPackageName}}.gen.go"
 template: testify
 template-data:
   unroll-variadic: true

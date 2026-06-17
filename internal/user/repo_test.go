@@ -68,38 +68,24 @@ func TestRepo_SelectRow(t *testing.T) {
 	tests := []struct {
 		name    string
 		login   string
-		pass    string
 		prepare func(t *testing.T, repo *user.UsersRepo) user.User
 		wantErr error
 	}{
 		{
 			name:  "Success get user",
 			login: "user1",
-			pass:  "password",
 			prepare: func(t *testing.T, repo *user.UsersRepo) user.User {
 				t.Helper()
-				created, err := repo.CreateUser(t.Context(), "user1", "password")
+				created, err := repo.CreateUser(t.Context(), "user1", "hashed-password")
 				require.NoError(t, err)
+				created.Password = "hashed-password"
 				return created
 			},
 			wantErr: nil,
 		},
 		{
-			name:  "Invalid credentials wrong password",
-			login: "user1",
-			pass:  "wrong",
-			prepare: func(t *testing.T, repo *user.UsersRepo) user.User {
-				t.Helper()
-				_, err := repo.CreateUser(t.Context(), "user1", "password")
-				require.NoError(t, err)
-				return user.User{}
-			},
-			wantErr: user.ErrInvalidCredentials,
-		},
-		{
 			name:    "User not found",
 			login:   "unknown",
-			pass:    "password",
 			wantErr: user.ErrUserNotFound,
 		},
 	}
@@ -116,7 +102,7 @@ func TestRepo_SelectRow(t *testing.T) {
 				want = tc.prepare(t, repo)
 			}
 
-			found, err := repo.GetByLogin(t.Context(), tc.login, tc.pass)
+			found, err := repo.GetByLogin(t.Context(), tc.login)
 			if tc.wantErr != nil {
 				require.Error(t, err)
 				require.ErrorIs(t, err, tc.wantErr)

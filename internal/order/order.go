@@ -22,7 +22,7 @@ const (
 )
 
 type Order struct {
-	Id         uuid.UUID `db:"id" json:"id"`
+	ID         uuid.UUID `db:"id" json:"id"`
 	UserID     uuid.UUID `db:"user_id" json:"user_id"`
 	Number     string    `db:"number" json:"number"`
 	Status     Status    `db:"status" json:"status"`

@@ -16,9 +16,12 @@ func WithUserID(ctx context.Context, userID uuid.UUID) context.Context {
 	return context.WithValue(ctx, userIDKey{}, userID)
 }
 
-func UserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+func UserIDFromContext(ctx context.Context) (uuid.UUID, error) {
 	userID, ok := ctx.Value(userIDKey{}).(uuid.UUID)
-	return userID, ok
+	if !ok || userID == uuid.Nil {
+		return uuid.Nil, ErrUnauthorized
+	}
+	return userID, nil
 }
 
 func NewAuthMiddleware(jwt *auth.JWT) func(http.Handler) http.Handler {

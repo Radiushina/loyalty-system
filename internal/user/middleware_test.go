@@ -22,8 +22,8 @@ func TestNewAuthMiddleware(t *testing.T) {
 	require.NoError(t, err)
 
 	handler := user.NewAuthMiddleware(jwtProvider)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got, ok := user.UserIDFromContext(r.Context())
-		require.True(t, ok)
+		got, err := user.UserIDFromContext(r.Context())
+		require.NoError(t, err)
 		require.Equal(t, userID, got)
 		w.WriteHeader(http.StatusOK)
 	}))

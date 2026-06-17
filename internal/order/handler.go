@@ -37,8 +37,8 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() { _ = r.Body.Close() }()
 
-		userID, ok := user.UserIDFromContext(r.Context())
-		if !ok {
+		userID, err := user.UserIDFromContext(r.Context())
+		if errors.Is(err, user.ErrUnauthorized) {
 			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
@@ -77,8 +77,8 @@ func (h *Handler) CreateOrder() http.HandlerFunc {
 
 func (h *Handler) GetOrders() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := user.UserIDFromContext(r.Context())
-		if !ok {
+		userID, err := user.UserIDFromContext(r.Context())
+		if errors.Is(err, user.ErrUnauthorized) {
 			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}

@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS orders(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
     number TEXT NOT NULL UNIQUE,
-    status order_status NULL,
+    status order_status NOT NULL DEFAULT 'NEW'::order_status,
     accrual NUMERIC NULL,
     uploaded_at TIMESTAMPTZ NOT NULL,
 
