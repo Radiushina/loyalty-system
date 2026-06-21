@@ -58,7 +58,7 @@ func TestAccrualWorkerPool_ProcessesEnqueuedOrder(t *testing.T) {
 	repo.EXPECT().
 		GetOrderByID(mock.Anything, orderID).
 		Return(order.Order{
-			Id:     orderID,
+			ID:     orderID,
 			UserID: userID,
 			Number: number,
 			Status: order.New,
