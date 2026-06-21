@@ -28,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
 
       - name: Download autotests binaries
-        uses: robinraju/release-downloader@v1.8
+        uses: robinraju/release-downloader@v1.13
         with:
           repository: Yandex-Practicum/go-autotests
           latest: true

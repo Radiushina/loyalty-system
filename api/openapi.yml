@@ -1,0 +1,362 @@
+openapi: 3.1.0
+
+info:
+  title: Cumulative loyalty system API
+  version: 2.18.0
+  description: |
+    Данный документ содержит документацию взаимодействия с накопительной системой лояльности
+
+tags:
+  - name: Auth
+    description: Методы авторизации
+  - name: Orders
+    description: Методы взаимодействия с заказами
+  - name: Balance
+    description: Методы взаимодействия с балансом
+
+paths:
+  /api/user/register:
+    post:
+      summary: Регистрация пользователя
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ login, password ]
+              properties:
+                login:
+                  type: string
+                  description: Логин
+                password:
+                  type: string
+                  description: Пароль
+      responses:
+        200:
+          description: 'Успешная регистрация'
+          headers:
+            Authorization:
+              $ref: '#/components/headers/Authorization'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserRes'
+        400:
+          $ref: '#/components/responses/400'
+        409:
+          $ref: '#/components/responses/409'
+        500:
+          $ref: '#/components/responses/500'
+
+  /api/user/login:
+    post:
+      summary: Аутентификация пользователя
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ login, password ]
+              properties:
+                login:
+                  type: string
+                  description: Логин
+                password:
+                  type: string
+                  description: Пароль
+      responses:
+        200:
+          description: 'Успешная аутентификация'
+          headers:
+            Authorization:
+              $ref: '#/components/headers/Authorization'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserRes'
+        400:
+          $ref: '#/components/responses/400'
+        401:
+          $ref: '#/components/responses/invalid_login_pass'
+        500:
+          $ref: '#/components/responses/500'
+
+  /api/user/orders:
+    get:
+      summary: Получение списка загруженных номеров заказов
+      security:
+        - BearerAuth: [ ]
+      description: |
+        Номера заказа в выдаче отсортированы по времени загрузки от самых новых к самым старым.
+        Формат даты — RFC3339.
+      tags:
+        - Orders
+      responses:
+        200:
+          description: 'Успешная обработка запроса'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './common/order.yml#/Order'
+              example:
+                - number: "9278923470"
+                  status: PROCESSED
+                  accrual: 500
+                  uploaded_at: "2020-12-10T15:15:45+03:00"
+                - number: "12345678903"
+                  status: PROCESSING
+                  uploaded_at: "2020-12-10T15:12:01+03:00"
+                - number: "346436439"
+                  status: INVALID
+                  uploaded_at: "2020-12-09T16:09:53+03:00"
+        204:
+          description: 'Нет данных для ответа'
+        401:
+          $ref: '#/components/responses/401'
+        500:
+          $ref: '#/components/responses/500'
+
+    post:
+      summary: Загрузка номера заказа
+      description: |
+        Номером заказа является последовательность цифр произвольной длины.
+        Номер заказа может быть проверен на корректность ввода с помощью алгоритма Луна.
+      security:
+        - BearerAuth: [ ]
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: Номер заказа
+              example: "12345678903"
+      responses:
+        200:
+          description: 'Номер заказа уже был загружен этим пользователем'
+        202:
+          description: 'Новый номер заказа принят в обработку'
+        400:
+          $ref: '#/components/responses/400'
+        401:
+          $ref: '#/components/responses/401'
+        409:
+          $ref: '#/components/responses/order_was_uploaded'
+        422:
+          $ref: '#/components/responses/422'
+        500:
+          $ref: '#/components/responses/500'
+
+  /api/user/balance:
+    get:
+      summary: Получение текущего баланса пользователя
+      security:
+        - BearerAuth: [ ]
+      description: Данные о текущей сумме баллов лояльности, а также сумме использованных за весь период регистрации баллов.
+      tags:
+        - Balance
+      responses:
+        200:
+          description: 'Успешная обработка запроса'
+          content:
+            application/json:
+              schema:
+                $ref: './common/balance.yml#/Balance'
+        401:
+          $ref: '#/components/responses/401'
+        500:
+          $ref: '#/components/responses/500'
+
+  /api/user/balance/withdraw:
+    post:
+      summary: Запрос на списание средств
+      security:
+        - BearerAuth: [ ]
+      description: Номер заказа представляет собой гипотетический номер нового заказа пользователя, в счёт оплаты которого списываются баллы.
+      tags:
+        - Balance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ order, sum ]
+              properties:
+                order:
+                  type: string
+                  description: Номер заказа
+                  example: "2377225624"
+                sum:
+                  type: float
+                  description: Cумма баллов к списанию в счёт оплаты
+                  example: 751
+      responses:
+        200:
+          description: 'Успешная обработка запроса'
+        401:
+          $ref: '#/components/responses/401'
+        402:
+          $ref: '#/components/responses/402'
+        422:
+          $ref: '#/components/responses/422'
+        500:
+          $ref: '#/components/responses/500'
+
+  /api/user/withdrawals:
+    get:
+      summary: Получение информации о выводе средств
+      security:
+        - BearerAuth: [ ]
+      description: Данные о выводе отсортированы по времени вывода от самых новых к самым старым. Формат даты — RFC3339.
+      tags:
+        - Balance
+      responses:
+        200:
+          description: 'Успешная обработка запроса'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './common/withdraw.yml#/Withdraw'
+              example:
+                - order: "9278923470"
+                  sum: 500
+                  processed_at: "2020-12-10T15:15:45+03:00"
+                - order: "12345678903"
+                  sum: 300.5
+                  processed_at: "2020-12-10T15:12:01+03:00"
+                - order: "346436439"
+                  sum: 200
+                  processed_at: "2020-12-09T16:09:53+03:00"
+        204:
+          description: 'Нет данных для ответа'
+        401:
+          $ref: '#/components/responses/401'
+        500:
+          $ref: '#/components/responses/500'
+
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT-токен, полученный при регистрации (`POST /api/user/register`) или входе (`POST /api/user/login`).
+        В ответе этих методов токен возвращается в заголовке `Authorization` (`Bearer <token>`)
+        и дублируется в теле JSON (поле `token`).
+        В последующих запросах передаётся в заголовке `Authorization`.
+  headers:
+    Authorization:
+      description: |
+        JWT-токен сессии в формате `Bearer <token>`.
+        Возвращается при успешной регистрации и входе.
+      schema:
+        type: string
+      example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+  responses:
+    '400':
+      description: 'Неверный формат запроса'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          examples:
+            bind:
+              summary: Bind Example
+              value: { "msg": "bind" }
+            validate:
+              summary: Validate Example
+              value: { "msg": "validate" }
+    '401':
+      description: 'Пользователь не авторизован'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "user unauthorized" }
+    '402':
+      description: 'На счету недостаточно средств'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "not enough funds" }
+    '403':
+      description: 'Ошибка проверки прав доступа'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "access forbidden" }
+    '404':
+      description: 'Объект не найден'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "not found" }
+    '409':
+      description: 'Логин уже занят'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "login is already taken" }
+    '422':
+      description: 'Неверный формат номера заказа'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "invalid order number format" }
+    '500':
+      description: 'Внутренняя ошибка сервера'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "internal server error" }
+    'invalid_login_pass':
+      description: 'Неверная пара логин/пароль'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "invalid login/password pair" }
+    'order_was_uploaded':
+      description: 'Номер заказа уже был загружен другим пользователем'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsuccessfulResponse'
+          example: { "msg": "the order number has already been uploaded by another user." }
+  schemas:
+    AuthUserRes:
+      type: object
+      required: [ user, token ]
+      properties:
+        user:
+          $ref: './common/user.yml#/User'
+        token:
+          type: string
+          description: JWT-токен (дублирует значение из заголовка Authorization)
+    UnsuccessfulResponse:
+      type: object
+      required: [ msg ]
+      properties:
+        msg:
+          type: string

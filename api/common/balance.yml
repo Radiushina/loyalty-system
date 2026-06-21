@@ -1,0 +1,13 @@
+#file: noinspection YAMLSchemaValidation
+Balance:
+  type: object
+  required: [current, withdrawn]
+  properties:
+    current:
+      type: float
+      description: Текущая сумма баллов лояльности
+      example: 500.5
+    withdrawn:
+      type: float
+      description: Сумма использованных за весь период регистрации баллов
+      example: 42

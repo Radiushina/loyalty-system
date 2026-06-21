@@ -1,0 +1,26 @@
+#file: noinspection YAMLSchemaValidation
+Order:
+  type: object
+  required: [number, status, uploaded_at]
+  properties:
+    number:
+      type: string
+      description: Номер заказа
+      example: "12345678903"
+    status:
+      type: string
+      description: Статус расчета начисления
+      enum:
+        - NEW
+        - PROCESSING
+        - INVALID
+        - PROCESSED
+    accrual:
+      type: float
+      description: Рассчитанные баллы к начислению
+      example: 500
+    uploaded_at:
+      type: string
+      format: date-time
+      description: Время загрузки номера заказа
+      example: "2020-12-09T16:09:53+03:00"

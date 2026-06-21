@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS user_balance(
+    user_id UUID PRIMARY KEY REFERENCES users(id),
+    current NUMERIC NOT NULL DEFAULT 0,
+    withdrawn NUMERIC NOT NULL DEFAULT 0
+);
