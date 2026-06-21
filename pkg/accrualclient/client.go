@@ -12,6 +12,25 @@ import (
 	"time"
 )
 
+// AccrualClient — HTTP-клиент системы расчёта начислений.
+//
+// # Ретраи
+//
+// Клиент оборачивает транспорт в retryablehttp: при кратковременных сбоях
+// запрос повторяется автоматически, без изменений в GetOrderInfo, PollOrder и воркере.
+//
+// Что ретраится:
+//   - сетевые ошибки;
+//   - HTTP 500.
+//
+// Что не ретраится:
+//   - 200 / 204 — финальный ответ;
+//   - 429 — паузу выставляет AccrualWorkerPool (setRateLimit);
+//   - остальные коды.
+//
+// GET /api/orders/{number} идемпотентен, повторные запросы безопасны.
+// Число попыток и backoff настраиваются через Config (RetryMax, RetryWaitMin, RetryWaitMax).
+
 // Provider — интерфейс клиента для моков в тестах.
 type Provider interface {
 	GetOrderInfo(ctx context.Context, orderNumber string) (OrderInfo, error)
@@ -26,13 +45,24 @@ var _ Provider = (*AccrualClient)(nil)
 
 func New(cfg Config) *AccrualClient {
 	return &AccrualClient{
-		baseURL: strings.TrimRight(cfg.Address, "/"),
-		httpClient: &http.Client{
-			Timeout: cfg.timeout(),
-		},
+		baseURL:    strings.TrimRight(cfg.Address, "/"),
+		httpClient: newRetryableHTTPClient(cfg),
 	}
 }
 
+// GetOrderInfo запрашивает статус заказа и начисление во внешней системе расчёта.
+//
+// Выполняет GET /api/orders/{number}. При временных сбоях HTTP-транспорт
+// может повторить запрос автоматически (см. комментарий к AccrualClient).
+//
+// Возможные результаты:
+//   - 200 — OrderInfo со статусом и опциональным accrual;
+//   - 204 — ErrNotFound (заказ ещё не зарегистрирован во внешней системе);
+//   - 429 — RateLimitedError с Retry-After;
+//   - 500 — ErrServer (в т.ч. после исчерпания ретраев);
+//   - прочие коды — UnexpectedStatusError.
+//
+// Пустой orderNumber возвращает ErrEmptyOrderNumber.
 func (c *AccrualClient) GetOrderInfo(ctx context.Context, orderNumber string) (OrderInfo, error) {
 	orderNumber = strings.TrimSpace(orderNumber)
 	if orderNumber == "" {
@@ -51,6 +81,11 @@ func (c *AccrualClient) GetOrderInfo(ctx context.Context, orderNumber string) (O
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		// retryablehttp после исчерпания попыток возвращает ошибку без *http.Response.
+		// Для вызывающего кода это эквивалент недоступности системы расчёта.
+		if isRetryExhausted(err) {
+			return OrderInfo{}, fmt.Errorf("%w: %w", ErrServer, err)
+		}
 		return OrderInfo{}, fmt.Errorf("do accrual request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -96,4 +131,17 @@ func parseRetryAfter(value string) time.Duration {
 	}
 
 	return time.Duration(seconds) * time.Second
+}
+
+// isRetryExhausted сообщает, что retryablehttp исчерпал все попытки.
+
+/*
+	https://github.com/hashicorp/go-retryablehttp/blob/v0.7.8/client.go
+	Когда все попытки исчерпаны, библиотека возвращает что-то вроде:
+
+return nil, fmt.Errorf("%s %s giving up after %d attempt(s): %w",
+req.Method, redactURL(req.URL), attempt, err)
+*/
+func isRetryExhausted(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "giving up after")
 }
