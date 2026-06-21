@@ -110,7 +110,7 @@ func TestHandler_CreateUser(t *testing.T) {
 			)
 			req.Header.Set("Content-Type", "application/json")
 
-			h.CreateUser(t.Context())(rec, req)
+			h.CreateUser()(rec, req)
 
 			require.Equal(t, tc.wantStatus, rec.Code)
 			if tc.wantSession == nil {
@@ -216,7 +216,7 @@ func TestHandler_AuthUser(t *testing.T) {
 			)
 			req.Header.Set("Content-Type", "application/json")
 
-			h.AuthUser(t.Context())(rec, req)
+			h.AuthUser()(rec, req)
 
 			require.Equal(t, tc.wantStatus, rec.Code)
 			if tc.wantSession == nil {

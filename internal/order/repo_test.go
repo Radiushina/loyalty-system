@@ -113,7 +113,7 @@ func TestRepo_Insert(t *testing.T) {
 			require.Equal(t, tc.orderNumber, orders[0].Number)
 			require.Equal(t, order.New, orders[0].Status)
 			require.Equal(t, float64(0), orders[0].Accrual)
-			require.NotEmpty(t, orders[0].Id)
+			require.NotEmpty(t, orders[0].ID)
 			require.False(t, orders[0].UploadedAt.IsZero())
 		})
 	}
@@ -187,7 +187,7 @@ func TestRepo_Select(t *testing.T) {
 				require.Equal(t, want.Number, got[i].Number)
 				require.Equal(t, want.Status, got[i].Status)
 				require.Equal(t, want.Accrual, got[i].Accrual)
-				require.NotEmpty(t, got[i].Id)
+				require.NotEmpty(t, got[i].ID)
 				require.False(t, got[i].UploadedAt.IsZero())
 			}
 		})
